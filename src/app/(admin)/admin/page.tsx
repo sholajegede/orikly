@@ -204,7 +204,7 @@ function Detail({ projectId }: { projectId: Id<"projects"> }) {
       </div>
       <div className="stack" style={{ gap: 10 }}>
         <b>What the AI made</b>
-        <div className="small">Website design: {d.project.siteDesign ? "done" : "not yet"} · Runs used: {d.project.directedCount ?? 0} of 2</div>
+        <div className="small">Studio: {d.project.studio ? `${d.project.studio.stage}${d.project.studio.note ? ` (${d.project.studio.note})` : ""}, run ${d.project.studio.runs} of 2` : "not started"}</div>
         {d.deliverables.length === 0 ? <div className="muted small">No videos saved yet.</div> : d.deliverables.map((x) => (
           <div key={x.index} className="row between card" style={{ padding: 10 }}>
             <span className="small"><b>{x.label}</b> · {x.format}</span>

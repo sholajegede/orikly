@@ -8,8 +8,8 @@ const wa = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP;
 const faqs = [
   { q: "Where is my website?", a: "Open your celebration from Home. The link is at the top, with buttons to open it, copy it and share it on WhatsApp. Before you pay, the same place shows a private preview." },
   { q: "How do I change my link?", a: "Open your celebration, go to Basics and edit \"Your link\". After your website is live you can change it up to 3 times. The old link stops working, so send the new one to your guests." },
-  { q: "How do I get my videos?", a: "After you pay, open your celebration and go to the last step. Tap \"Design my website and videos\", then \"Save my two videos\". They appear under Downloads and in Files." },
-  { q: "Can I change my photos after paying?", a: "Yes. Your website updates right away. Your videos are directed once, with one free redo." },
+  { q: "How do I get my videos?", a: "They make themselves. After you pay, the studio designs your website and renders two films, one tall and one wide. It takes about ten minutes and you can close the page. They appear on the last step under Downloads, and in Files." },
+  { q: "Can I change my photos after paying?", a: "Yes. Your website updates right away. Your films are made once, with one free redo." },
   { q: "Can I edit my website myself?", a: "Yes, for free, as often as you like. Open your celebration and go to Look. Change the colors, the lettering, the cover photo, and move, rename or hide any part of the page." },
   { q: "How do I pay?", a: "On the last step, by card or bank transfer on a secure payment page. Your website goes live by itself the moment the payment enters. Nobody has to approve it." },
   { q: "What are credits?", a: "One credit publishes one celebration. Buy them in packs at a lower price each. Credits never expire." },

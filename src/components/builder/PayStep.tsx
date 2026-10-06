@@ -7,7 +7,7 @@ import { PRICE_KOBO } from "@convex/lib/constants";
 import { cleanError, naira, shortDate, siteUrl } from "@/lib/format";
 import { useTrack } from "@/lib/track";
 import type { BuilderData } from "./shared";
-import { InstantVideos } from "./InstantVideos";
+import { Studio } from "./Studio";
 
 const wa = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP;
 
@@ -65,14 +65,14 @@ export function PayStep({ data }: { data: BuilderData }) {
         <div className="hint">Only you can see the preview until payment is confirmed.</div>
       </div>
 
-      <InstantVideos data={data} />
+      <Studio data={data} />
 
       {project.status === "suspended" ? <div className="card err">This site is suspended. Please contact support.</div> : null}
 
       {project.status === "draft" && (me?.credits ?? 0) > 0 ? (
         <div className="card stack" style={{ gap: 10 }}>
           <div className="row between"><h3 style={{ fontSize: 22 }}>You have {me?.credits} credit{me?.credits === 1 ? "" : "s"}</h3><span className="chip gold">No payment needed</span></div>
-          <p className="muted" style={{ margin: 0 }}>Use one credit to publish this celebration and start its two videos.</p>
+          <p className="muted" style={{ margin: 0 }}>Use one credit to publish this celebration. The studio then makes its website and two films.</p>
           {error ? <div className="err">{error}</div> : null}
           <div><button className="btn gold" disabled={busy || !ready} onClick={() => { setBusy(true); setError(null); void useCredit({ id: project._id }).catch((e) => setError(cleanError(e))).finally(() => setBusy(false)); }}>Use a credit</button></div>
           {!ready ? <div className="hint">Add at least 3 photos first.</div> : null}

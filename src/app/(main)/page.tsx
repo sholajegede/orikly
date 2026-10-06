@@ -35,11 +35,11 @@ const extras = [
 
 const faqs = [
   { q: "How fast is it, really?", a: "Most people finish in about ten minutes. Your website is live the moment your payment is confirmed. Your two videos are ready a few minutes after that." },
-  { q: "Do I pay before I see anything?", a: "No. You build and see your whole website first. Your two videos are directed after you pay, because each one uses real AI time." },
-  { q: "Who makes the videos?", a: "An AI director does. It looks at every photo and reads your words, then chooses the order, finds each face, plans every camera move and writes the captions. Your phone plays that plan with your song and saves the video. No two come out the same." },
+  { q: "Do I pay before I see anything?", a: "No. You build and see your whole website first. Your designed website and two films are made after you pay, because they use real AI time." },
+  { q: "Who makes the videos?", a: "An AI art director does. It studies every photo and reads your words, designs your website, looks at its own work and improves it, then cuts two films from that design to your song. It all happens by itself after you pay, in about ten minutes. You do not have to keep the page open." },
   { q: "How do I pay?", a: "By card or bank transfer on a secure payment page. It is ₦20,000, once." },
   { q: "Can I use my own song?", a: "Yes. Upload it and it plays in your videos. It stays in your downloadable videos and does not play on the public website." },
-  { q: "Can I change things after I pay?", a: "Your website, yes: update the photos, words and colors when you need to. Your videos are directed once, and you get one free redo if you want a different cut." },
+  { q: "Can I change things after I pay?", a: "Your website, yes: update the photos, words and colors when you need to. Your films are made once, and you get one free redo if you want a different design and cut." },
   { q: "Who can see my website?", a: "Only people who have your link. We tell search engines not to list it, and we do not put advertising trackers on it." },
   { q: "What if something goes wrong?", a: "If your website or your videos do not work and we cannot fix it within 48 hours, we refund you in full. The refund policy has the details." },
 ];

@@ -79,7 +79,7 @@ export default function Builder() {
   return (
     <>
       <AppBar />
-      <main className={`page slim ${step === 5 && project.siteDesign ? "wide" : ""}`}>
+      <main className={`page slim ${step === 5 && project.siteDesign?.v === 2 ? "wide" : ""}`}>
         <div className="row between" style={{ marginBottom: 12 }}>
           <Link href="/app" className="muted small">← My celebrations</Link>
           <span className={`chip ${live ? "ok" : project.status === "suspended" ? "bad" : ""}`}>

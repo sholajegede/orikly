@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const d = await getSite(slug);
     if (!d) return { ...base, title: "Celebration" };
     const title = d.site.names;
-    const description = d.design?.hero.tagline ?? d.site.headline ?? "Come and celebrate with us.";
+    const description = d.design?.opener?.text ?? d.site.headline ?? "Come and celebrate with us.";
     // The share picture comes from opengraph-image.tsx next to this file.
     return { ...base, title, description, openGraph: { title, description, type: "website", siteName: "Orikly" }, twitter: { card: "summary_large_image", title, description } };
   } catch {

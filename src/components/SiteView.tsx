@@ -5,9 +5,9 @@ import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@convex/_generated/api";
 import { OCCASIONS, PALETTES } from "@convex/lib/constants";
-import { fontsHref, onColor, type DesignSection, type SiteDesign } from "@convex/lib/design";
+import { fontsHref } from "@convex/lib/design";
+import { SiteCanvas, type CanvasData } from "@/components/site/SiteCanvas";
 import { cleanError, daysUntil, prettyDate } from "@/lib/format";
-import { textileSize, textileUrl } from "@/lib/textile";
 import { useTrack } from "@/lib/track";
 
 const main = process.env.NEXT_PUBLIC_SITE_URL ?? "/";
@@ -18,58 +18,6 @@ function clock(hhmm: string): string {
 }
 
 export type SiteData = NonNullable<FunctionReturnType<typeof api.projects.publicBySlug>>;
-
-const WEIGHT: Record<string, number> = { "Bricolage Grotesque": 700, Syne: 700, Fraunces: 500, "Playfair Display": 500, "Cormorant Garamond": 600 };
-const TITLES: Record<DesignSection["type"], string> = { story: "Our story", quote: "", numbers: "In numbers", gallery: "Moments", details: "The day", videos: "Watch", moment: "Celebrate", note: "A note", gift: "Send a gift", wishes: "Wishes" };
-
-/** One tap for the guest: blow out the candles on a birthday, throw confetti on any other day. */
-function Moment({ birthday, names, onDone }: { birthday: boolean; names: string; onDone: () => void }) {
-  const [done, setDone] = useState(false);
-  const [bits, setBits] = useState<{ x: number; d: number; r: number; c: number; s: number }[]>([]);
-  const go = () => {
-    setBits(Array.from({ length: 70 }, () => ({ x: Math.random() * 100, d: Math.random() * 0.7, r: Math.random() * 720 - 360, c: Math.floor(Math.random() * 3), s: 7 + Math.random() * 9 })));
-    if (!done) onDone();
-    setDone(true);
-  };
-  return (
-    <div className={`dz-moment ${done ? "done" : ""}`}>
-      {birthday ? <div className="dz-candles" aria-hidden="true">{[0, 1, 2, 3, 4].map((i) => <i key={i} style={{ transitionDelay: `${i * 0.12}s` }} />)}</div> : null}
-      <p aria-live="polite">{done ? (birthday ? "Wish made. It is on its way." : `To ${names}!`) : birthday ? "Close your eyes, make a wish for the celebrant, then blow." : "This is the part where everybody shouts."}</p>
-      <button className="btn sbtn" onClick={go}>{done ? "Again" : birthday ? "Blow out the candles" : "Throw confetti"}</button>
-      {bits.length ? <div className="dz-confetti" key={bits[0].x} aria-hidden="true">{bits.map((b, i) => <i key={i} data-c={b.c} style={{ left: `${b.x}%`, width: b.s, height: b.s * 0.45, animationDelay: `${b.d}s`, ["--r" as string]: `${b.r}deg` }} />)}</div> : null}
-    </div>
-  );
-}
-
-function Polaroid({ url, line, tilt, onOpen }: { url: string; line?: string; tilt: number; onOpen: () => void }) {
-  const [flipped, setFlipped] = useState(false);
-  return (
-    <button className={`dz-pol rv ${flipped ? "flip" : ""}`} style={{ ["--t" as string]: `${tilt}deg` }} onClick={() => (line ? setFlipped(!flipped) : onOpen())} aria-label={line ? "Turn this photo over" : "Open photo"}>
-      <span className="face"><img src={url} alt="" loading="lazy" />{line ? <em>tap</em> : null}</span>
-      {line ? <span className="back"><span>{line}</span></span> : null}
-    </button>
-  );
-}
-
-/** Ticks down to the day. It renders only in the browser, so the cached page stays the same for everyone. */
-function Countdown({ date, time }: { date: string; time: string | null }) {
-  const [left, setLeft] = useState<number | null>(null);
-  useEffect(() => {
-    const target = new Date(`${date}T${time ?? "00:00"}:00`).getTime();
-    const tick = () => setLeft(target - Date.now());
-    tick();
-    const t = setInterval(tick, 30_000);
-    return () => clearInterval(t);
-  }, [date, time]);
-  if (left === null || left <= 0) return null;
-  const mins = Math.floor(left / 60_000);
-  const parts: [number, string][] = [[Math.floor(mins / 1440), "days"], [Math.floor((mins % 1440) / 60), "hours"], [mins % 60, "minutes"]];
-  return (
-    <div className="dz-count" aria-label="Time left until the day">
-      {parts.map(([n, l]) => (<div key={l}><b>{n}</b><span>{l}</span></div>))}
-    </div>
-  );
-}
 
 /**
  * Live sites arrive pre-rendered from the server and are cached, so thousands of guests cost one query.
@@ -109,7 +57,9 @@ export function SiteView({ slug, initial }: { slug: string; initial?: SiteData }
   useEffect(() => {
     const el = root.current;
     if (!el || !stamp || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    el.classList.add("anim");
+    const page = el.querySelector(".cz");
+    if (!page) return;
+    page.classList.add("anim");
     const io = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
     el.querySelectorAll(".rv").forEach((n) => io.observe(n));
     return () => io.disconnect();
@@ -208,7 +158,21 @@ export function SiteView({ slug, initial }: { slug: string; initial?: SiteData }
   const box = lightbox ? <div className="lightbox" onClick={() => setLightbox(null)}><img src={lightbox} alt="" /></div> : null;
   const countLabel = days !== null && days > 0 ? `${days} ${days === 1 ? "day" : "days"} to go` : days === 0 ? "Today is the day" : null;
 
-  if (design) return designed(design);
+  if (design) {
+    const canvas: CanvasData = { design, live, site, photos, clips: videos, films: data.films, wishes };
+    return (
+      <div ref={root}>
+        <link rel="stylesheet" href={fontsHref(design)} precedence="default" />
+        <SiteCanvas
+          data={canvas}
+          banner={banner}
+          onTrack={(name, props) => track(name, { slug, props })}
+          onWish={async (name, message, website) => { try { await addWish({ slug, guestName: name, message, website: website || undefined }); } catch (e) { throw new Error(cleanError(e)); } }}
+          onShare={() => { track("share_click", { slug, props: { channel: "whatsapp" } }); window.open(`https://wa.me/?text=${encodeURIComponent(`${site.names}: ${window.location.href}`)}`, "_blank", "noopener"); }}
+        />
+      </div>
+    );
+  }
 
   const vars: Record<string, string> = { "--accent": palette.accent, "--on-accent": palette.onAccent };
   if (!midnight) {
@@ -247,124 +211,4 @@ export function SiteView({ slug, initial }: { slug: string; initial?: SiteData }
       {box}
     </div>
   );
-
-  function designed(d: SiteDesign) {
-    const byId = new Map(photos.map((p) => [p.id, p.url]));
-    const heroUrl = (d.hero.photo && byId.get(d.hero.photo)) || coverUrl;
-    const extra = (d.hero.extra ?? []).map((id) => byId.get(id)).filter((u): u is string => !!u);
-    const variant = !heroUrl ? "stack" : d.hero.variant === "collage" && extra.length < 2 ? "full" : d.hero.variant;
-    const focus = { objectPosition: `${Math.round(d.hero.fx * 100)}% ${Math.round(d.hero.fy * 100)}%` };
-    const vars = {
-      "--bg": d.colors.bg, "--ink": d.colors.ink, "--accent": d.colors.accent, "--card": d.colors.card, "--muted": d.colors.muted,
-      "--on-accent": onColor(d.colors.accent), "--df": `"${d.fonts.display}", Georgia, serif`, "--bf": `"${d.fonts.body}", system-ui, sans-serif`, "--dw": String(WEIGHT[d.fonts.display] ?? 400),
-    } as React.CSSProperties;
-    const band = d.motif !== "none" ? <div className="dz-band" aria-hidden="true" style={{ backgroundImage: textileUrl(d.motif, d.colors.accent, d.colors.bg), backgroundSize: textileSize(d.motif) }} /> : null;
-
-    const has: Record<DesignSection["type"], (s: DesignSection) => boolean> = {
-      story: () => !!site.story,
-      quote: (s) => !!s.text,
-      numbers: (s) => (s.items ?? []).length >= 2,
-      moment: () => true,
-      gallery: (s) => (s.photos ?? []).some((id) => byId.has(id)),
-      details: () => !!(site.eventDate || site.venue || site.eventTime || site.dressCode),
-      videos: () => allVideos.length > 0,
-      note: () => !!site.message,
-      gift: () => !!giftBlock,
-      wishes: () => site.wishesOn,
-    };
-    const shown = d.sections.filter((s) => !s.hidden && has[s.type](s));
-    // The full countdown lives in "The day". The hero only shows the short one when that part is hidden.
-    const ticking = days !== null && days > 0 && shown.some((s) => s.type === "details");
-    let n = 0;
-    const head = (s: DesignSection) => {
-      n += 1;
-      return <header className="dz-h rv"><span>{String(n).padStart(2, "0")}</span><h2>{s.title ?? TITLES[s.type]}</h2></header>;
-    };
-
-    const body = (s: DesignSection, i: number) => {
-      switch (s.type) {
-        case "quote":
-          return <section key={i} className="dz-sec dz-quote rv"><blockquote>{s.text}</blockquote></section>;
-        case "story": {
-          const side = s.layout === "side" && s.photo ? byId.get(s.photo) : undefined;
-          return (
-            <section key={i} className="dz-sec"><div className={`dz-wrap ${side ? "dz-side" : "dz-narrow"}`}>
-              <div>{head(s)}<p className={`dz-prose rv ${s.layout === "dropcap" ? "cap" : ""}`}>{site.story}</p></div>
-              {side ? <img className="rv" src={side} alt="" loading="lazy" onClick={() => open(side)} /> : null}
-            </div></section>
-          );
-        }
-        case "gallery": {
-          const urls = (s.photos ?? []).map((id) => byId.get(id)).filter((u): u is string => !!u);
-          if (s.layout === "wall") {
-            const ids = (s.photos ?? []).filter((id) => byId.has(id));
-            return (
-              <section key={i} className="dz-sec"><div className="dz-wrap">{head(s)}
-                {(s.lines ?? []).some(Boolean) ? <p className="dz-hint rv">Tap a photo to turn it over.</p> : null}
-                <div className="dz-wall">{ids.map((id, k) => (<Polaroid key={id} url={byId.get(id)!} line={(s.lines ?? [])[(s.photos ?? []).indexOf(id)] || undefined} tilt={[-3, 2, -1.5, 3, -2.5, 1.5][k % 6]} onOpen={() => open(byId.get(id)!)} />))}</div>
-              </div></section>
-            );
-          }
-          return (
-            <section key={i} className="dz-sec"><div className="dz-wrap">{head(s)}
-              <div className={`dz-gal ${s.layout ?? "masonry"}`}>{urls.map((u) => (<img key={u} className="rv" src={u} alt="" loading="lazy" onClick={() => open(u)} />))}</div>
-            </div></section>
-          );
-        }
-        case "numbers":
-          return (
-            <section key={i} className="dz-sec dz-nums"><div className="dz-wrap">
-              <div className="dz-numgrid">{(s.items ?? []).map((x, k) => (<div key={k} className="rv"><b>{x.value}</b><span>{x.label}</span></div>))}</div>
-            </div></section>
-          );
-        case "moment":
-          return <section key={i} className="dz-sec dz-momentsec"><div className="dz-wrap dz-narrow">{head(s)}<div className="rv"><Moment birthday={site.occasion === "birthday"} names={site.names} onDone={() => track("moment_tap", { slug })} /></div></div></section>;
-        case "details":
-          return (
-            <section key={i} className="dz-sec dz-day"><div className="dz-wrap">{head(s)}
-              {site.eventDate && days !== null && days > 0 ? <div className="rv"><div className="dz-countlabel">Counting down to the day</div><Countdown date={site.eventDate} time={site.eventTime} /></div> : null}
-              <div className="rv">{facts}</div>
-            </div></section>
-          );
-        case "videos":
-          return <section key={i} className="dz-sec"><div className="dz-wrap">{head(s)}<div className="rv">{vids}</div></div></section>;
-        case "note":
-          return <section key={i} className="dz-sec"><div className="dz-wrap dz-narrow">{head(s)}<div className="dz-note rv"><p>{site.message}</p><b>{site.names}</b></div></div></section>;
-        case "gift":
-          return <section key={i} className="dz-sec"><div className="dz-wrap dz-narrow">{head(s)}<div className="rv">{giftBlock}</div></div></section>;
-        case "wishes":
-          return <section key={i} className="dz-sec"><div className="dz-wrap dz-narrow">{head(s)}<div className="rv">{wishBlock}</div></div></section>;
-      }
-    };
-
-    const meta = [occ.label, site.eventDate ? prettyDate(site.eventDate) : null, site.venue].filter(Boolean).join(" · ");
-    const words = (
-      <div className="dz-words">
-        {d.hero.kicker ? <div className="dz-kick">{d.hero.kicker}</div> : null}
-        <h1 className={`dz-names ${d.namesStyle}`}>{site.names}</h1>
-        {d.hero.tagline || site.headline ? <p className="dz-tag">{d.hero.tagline ?? site.headline}</p> : null}
-        <div className="dz-meta">{meta}</div>
-        {countLabel && !ticking ? <span className="dz-chip">{countLabel}</span> : null}
-      </div>
-    );
-
-    return (
-      <div className="site dz" ref={root} style={vars}>
-        <link rel="stylesheet" href={fontsHref(d)} precedence="default" />
-        {banner}
-        <header className={`dz-hero ${variant}`}>
-          {variant === "full" ? <><img className="dz-cover" src={heroUrl!} alt="" style={focus} />{words}</> : null}
-          {variant === "split" ? <>{words}<div className="dz-arch"><img src={heroUrl!} alt="" style={focus} /></div></> : null}
-          {variant === "stack" ? <>{words}{heroUrl ? <div className="dz-frame"><img src={heroUrl} alt="" style={focus} /></div> : null}</> : null}
-          {variant === "collage" ? <>{words}<div className="dz-collage"><img src={extra[0]} alt="" /><img src={heroUrl!} alt="" style={focus} /><img src={extra[1]} alt="" /></div></> : null}
-        </header>
-        {band}
-        {shown.map(body)}
-        {shareBlock ? <section className="dz-sec dz-share"><p>Send this to someone who should be there.</p>{shareBlock}</section> : null}
-        {band}
-        {made}
-        {box}
-      </div>
-    );
-  }
 }
