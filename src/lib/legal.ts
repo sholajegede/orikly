@@ -27,7 +27,7 @@ export const LEGAL: Record<string, Doc> = {
       ] },
       { h: "3. Price and payment", body: [
         "You can build and preview a celebration for free. Publishing it and downloading videos without a watermark costs the price shown at checkout, paid once. Prices are in Naira and include any tax we are required to charge.",
-        "Payments are processed by our payment partner. We do not see or store your card number. Where we offer manual bank transfer, your celebration goes live after we confirm that the money arrived.",
+        "Payments are processed by our payment partner. We do not see or store your card number. Your celebration goes live automatically when our payment partner confirms the payment.",
         "Packs: you can buy several celebrations at once at a lower price each. Each credit publishes one celebration. Credits do not expire, cannot be exchanged for cash and cannot be moved to another account.",
       ] },
       { h: "4. Your content", body: [
@@ -82,7 +82,7 @@ export const LEGAL: Record<string, Doc> = {
           ["Account", "Your email address, and your name if you give it.", "You"],
           ["Celebration content", "Photos, videos, names, dates, your story and messages, your song, venue and dress code, and bank details if you choose to show them for gifts.", "You"],
           ["Guest wishes", "The name and message a guest types on a celebration website.", "Guests"],
-          ["Payments", "What you bought, the amount, the time, a payment reference, and for bank transfers the sender name you give us. We never receive your card number.", "You and our payment partner"],
+          ["Payments", "What you bought, the amount, the time, a payment reference. We never receive your card number.", "You and our payment partner"],
           ["Usage", "Pages opened and steps completed, a random session id, the kind of device, and where you came from (for example an advert).", "Your browser"],
         ], head: ["Kind", "What it is", "From"] },
         "Photos can show other people, including children. You must have their permission, or be the parent or guardian, before you upload them.",

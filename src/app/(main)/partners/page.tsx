@@ -39,7 +39,7 @@ export default function Partners() {
                 );
               })}
             </div>
-            <p className="muted" style={{ marginTop: 24, maxWidth: 560 }}>You pay once, by card or bank transfer. The credits are added to your account when the payment is confirmed. Build each client's celebration yourself, then use a credit to publish it. Credits do not expire.</p>
+            <p className="muted" style={{ marginTop: 24, maxWidth: 560 }}>You pay once, by card or bank transfer on a secure page. The credits are added to your account the moment you pay, and they never expire.</p>
           </div>
         </section>
       </main>

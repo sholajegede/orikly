@@ -29,7 +29,6 @@ Set the Convex environment variables below with `npx convex env set NAME value`.
 | `AUTH_RESEND_KEY` | Convex | Resend API key |
 | `AUTH_EMAIL_FROM` | Convex | Sender, for example `Orikly <login@orikly.ng>`. The domain must be verified in Resend. |
 | `ADMIN_EMAILS` | Convex | Comma-separated emails that can open `/admin` |
-| `BANK_NAME`, `BANK_ACCOUNT_NUMBER`, `BANK_ACCOUNT_NAME` | Convex | Shown on the bank transfer step |
 
 ## How customer sites are served
 
@@ -37,7 +36,7 @@ Each celebration lives at `/s/<slug>`. When `NEXT_PUBLIC_ROOT_DOMAIN` is set, th
 
 ## Admin
 
-Open `/admin` with an email listed in `ADMIN_EMAILS`. It shows the signup funnel, every project, and a page per customer. From Projects you can confirm a bank transfer, suspend a site, and upload the finished videos for a customer.
+Open `/admin` with an email listed in `ADMIN_EMAILS`. It shows the signup funnel, every project, and a page per customer. From Projects you can suspend a site, publish one for free, and see what the AI made.
 
 ## Layout
 
