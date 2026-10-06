@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { currentUser, requireOwnedProject, requireUser } from "./lib/auth";
 import { logEvent } from "./lib/events";
+import { startStudio } from "./studio";
 
 export const mine = query({
   args: {},
@@ -28,5 +29,6 @@ export const useCredit = mutation({
     await ctx.db.patch(id, { status: "paid", paidAt: now, updatedAt: now });
     await ctx.db.insert("payments", { projectId: id, ownerId: user._id, method: "credit", amountKobo: 0, status: "confirmed", note: "Pack credit", createdAt: now, confirmedAt: now });
     await logEvent(ctx, { name: "credit_used", userId: user._id, projectId: id });
+    await startStudio(ctx, id);
   },
 });

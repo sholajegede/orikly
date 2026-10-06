@@ -56,6 +56,7 @@ export default defineSchema({
     slugChanges: v.optional(v.number()),
     videoPlan: v.optional(v.any()),
     siteDesign: v.optional(v.any()),
+    studio: v.optional(v.object({ stage: v.string(), runs: v.number(), at: v.number(), note: v.optional(v.string()) })),
     directedCount: v.optional(v.number()),
     siteStyle: v.string(),
     palette: v.string(),

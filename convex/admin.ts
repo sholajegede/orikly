@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { currentUser, isAdminEmail, requireAdmin } from "./lib/auth";
 import { logEvent } from "./lib/events";
+import { startStudio } from "./studio";
 import { PROJECT_STATUSES } from "./lib/constants";
 import { dayOf, lifetime, sumSince } from "./lib/counters";
 
@@ -207,6 +208,7 @@ export const publishFree = mutation({
     await ctx.db.patch(projectId, { status: "paid", paidAt: project.paidAt ?? now, updatedAt: now });
     await ctx.db.insert("payments", { projectId, ownerId: project.ownerId, method: "comp", amountKobo: 0, status: "confirmed", note: `Published free by ${admin.email ?? "admin"}`, createdAt: now, confirmedAt: now });
     await logEvent(ctx, { name: "published_free", userId: project.ownerId, projectId, props: { by: admin.email ?? "admin" } });
+    await startStudio(ctx, projectId);
   },
 });
 

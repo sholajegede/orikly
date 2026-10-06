@@ -16,7 +16,6 @@ import type * as assets from "../assets.js";
 import type * as auth from "../auth.js";
 import type * as bachs from "../bachs.js";
 import type * as crons from "../crons.js";
-import type * as director from "../director.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
@@ -28,6 +27,7 @@ import type * as lib_limit from "../lib/limit.js";
 import type * as maintenance from "../maintenance.js";
 import type * as packs from "../packs.js";
 import type * as projects from "../projects.js";
+import type * as studio from "../studio.js";
 import type * as users from "../users.js";
 import type * as wishes from "../wishes.js";
 
@@ -46,7 +46,6 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   bachs: typeof bachs;
   crons: typeof crons;
-  director: typeof director;
   events: typeof events;
   http: typeof http;
   "lib/auth": typeof lib_auth;
@@ -58,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   maintenance: typeof maintenance;
   packs: typeof packs;
   projects: typeof projects;
+  studio: typeof studio;
   users: typeof users;
   wishes: typeof wishes;
 }>;

@@ -295,8 +295,8 @@ export const saveDesign = mutation({
     if (project.status === "suspended") throw new ConvexError("This site is suspended. Contact support.");
     await limit(ctx, `design:${id}`, 600, 3_600_000);
     const assets = await ctx.db.query("assets").withIndex("by_project", (q) => q.eq("projectId", id)).take(100);
-    const ids = assets.filter((a) => a.kind === "photo").sort((a, b) => a.order - b.order).map((a) => a._id as string);
-    const clean = tidyDesign(design, ids, "you");
+    const ids = (kind: "photo" | "video") => assets.filter((a) => a.kind === kind).sort((a, b) => a.order - b.order).map((a) => a._id as string);
+    const clean = tidyDesign(design, ids("photo"), ids("video"), "you");
     if (!clean) throw new ConvexError("That design could not be saved.");
     await ctx.db.patch(id, { siteDesign: clean, updatedAt: Date.now() });
   },
@@ -324,35 +324,6 @@ export const wall = query({
     return await Promise.all(
       live.map(async (p) => ({ slug: p.slug, names: p.names, occasion: p.occasion, palette: p.palette, coverUrl: await assetUrl(ctx, p.coverAssetId) })),
     );
-  },
-});
-
-const MAX_INSTANT_BYTES = 150 * 1024 * 1024;
-
-/** Save a video the customer just made in their browser. One per shape; making it again replaces it. */
-export const addInstantVideo = mutation({
-  args: { id: v.id("projects"), storageId: v.id("_storage"), format: v.union(v.literal("portrait"), v.literal("landscape")) },
-  handler: async (ctx, { id, storageId, format }) => {
-    const { user, project } = await requireOwnedProject(ctx, id);
-    const meta = await ctx.db.system.get(storageId);
-    const fail = async (msg: string) => {
-      if (meta) await ctx.storage.delete(storageId);
-      throw new ConvexError(msg);
-    };
-    if (project.status !== "paid") await fail("Your videos are saved once your celebration is live.");
-    if (!meta || !(meta.contentType ?? "").startsWith("video/")) await fail("That file is not a video.");
-    if (meta!.size > MAX_INSTANT_BYTES) await fail("That video is too large.");
-
-    const label = format === "portrait" ? "Instant video, tall" : "Instant video, wide";
-    const list = [...(project.deliverables ?? [])];
-    const at = list.findIndex((d) => d.label === label);
-    if (at >= 0) {
-      await ctx.storage.delete(list[at].storageId);
-      list.splice(at, 1);
-    }
-    list.unshift({ label, format, storageId });
-    await ctx.db.patch(id, { deliverables: list, updatedAt: Date.now() });
-    await logEvent(ctx, { name: "video_instant", userId: user._id, projectId: id, props: { format } });
   },
 });
 
@@ -389,8 +360,9 @@ export const publicBySlug = query({
       .filter((w) => w.status === "approved")
       .map((w) => ({ guestName: w.guestName, message: w.message, createdAt: w.createdAt }));
 
-    const first = (project.deliverables ?? [])[0];
-    const featuredVideoUrl = live && first ? await ctx.storage.getUrl(first.storageId) : null;
+    const made = live ? await Promise.all((project.deliverables ?? []).map(async (d) => ({ format: d.format, url: await ctx.storage.getUrl(d.storageId) }))) : [];
+    const films = made.filter((f): f is { format: string; url: string } => !!f.url);
+    const featuredVideoUrl = films[0]?.url ?? null;
 
     return {
       live,
@@ -416,8 +388,9 @@ export const publicBySlug = query({
       },
       coverUrl: cover?.url ?? photos[0]?.url ?? null,
       photos: photos.map((p) => ({ id: p.id as string, url: p.url as string, width: p.width, height: p.height })),
-      design: (project.siteDesign ?? null) as SiteDesign | null,
-      videos: videos.map((p) => ({ url: p.url as string })),
+      design: (project.siteDesign?.v === 2 ? project.siteDesign : null) as SiteDesign | null,
+      videos: videos.map((p) => ({ id: p.id as string, url: p.url as string })),
+      films,
       wishes,
       featuredVideoUrl,
     };

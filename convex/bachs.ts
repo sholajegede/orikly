@@ -7,6 +7,7 @@ import { limit } from "./lib/limit";
 import { PACKS, PRICE_KOBO } from "./lib/constants";
 import { bump } from "./lib/counters";
 import { requireUser } from "./lib/auth";
+import { startStudio } from "./studio";
 
 const naira = (kobo: number) => (kobo / 100).toFixed(2);
 
@@ -148,6 +149,7 @@ export const fulfil = internalMutation({
         await ctx.db.patch(project._id, { status: project.status === "suspended" ? "suspended" : "paid", paidAt: project.paidAt ?? now, updatedAt: now });
         await ctx.db.insert("payments", { projectId: project._id, ownerId: project.ownerId, method: "bachs", amountKobo: paidKobo, status: "confirmed", reference: a.reference, createdAt: now, confirmedAt: now });
         await logEvent(ctx, { name: "payment_confirmed", userId: project.ownerId, projectId: project._id, props: { method: "bachs" } });
+        if (project.status !== "suspended") await startStudio(ctx, project._id);
       }
     } else if (row.kind === "pack" && row.packId) {
       const pack = PACKS.find((p) => p.id === row.packId);

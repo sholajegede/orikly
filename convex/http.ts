@@ -1,6 +1,7 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { auth } from "./auth";
 
 const http = httpRouter();
@@ -65,5 +66,31 @@ http.route({
     return new Response("ok", { status: 200 });
   }),
 });
+
+// The studio job (src/trigger/produce.ts) calls these. Both sides hold STUDIO_SECRET.
+function studioRoute(path: string, run: (ctx: Parameters<Parameters<typeof httpAction>[0]>[0], body: Record<string, unknown>) => Promise<unknown>) {
+  http.route({
+    path,
+    method: "POST",
+    handler: httpAction(async (ctx, request) => {
+      const secret = process.env.STUDIO_SECRET;
+      const given = request.headers.get("Authorization") ?? "";
+      if (!secret || !sameString(given, `Bearer ${secret}`)) return new Response("Not allowed", { status: 401 });
+      try {
+        const body = (await request.json()) as Record<string, unknown>;
+        return Response.json((await run(ctx, body)) ?? { ok: true });
+      } catch (e) {
+        const data = (e as { data?: unknown })?.data;
+        return Response.json({ error: typeof data === "string" ? data : "The studio hit a problem." }, { status: 400 });
+      }
+    }),
+  });
+}
+type Pid = Id<"projects">;
+studioRoute("/studio/gather", (ctx, b) => ctx.runQuery(internal.studio.gather, { projectId: b.projectId as Pid }));
+studioRoute("/studio/stage", (ctx, b) => ctx.runMutation(internal.studio.setStage, { projectId: b.projectId as Pid, stage: b.stage as "designing", note: b.note as string | undefined }));
+studioRoute("/studio/design", (ctx, b) => ctx.runAction(internal.studio.design, { projectId: b.projectId as Pid, shots: b.shots as Id<"_storage">[] | undefined }));
+studioRoute("/studio/upload", async (ctx) => ({ url: await ctx.runMutation(internal.studio.uploadUrl, {}) }));
+studioRoute("/studio/film", (ctx, b) => ctx.runMutation(internal.studio.saveFilm, { projectId: b.projectId as Pid, storageId: b.storageId as Id<"_storage">, format: b.format as "portrait" }));
 
 export default http;
