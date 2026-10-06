@@ -4,7 +4,6 @@ import type { Doc } from "./_generated/dataModel";
 import { currentUser, isAdminEmail, requireAdmin } from "./lib/auth";
 import { logEvent } from "./lib/events";
 import { PROJECT_STATUSES } from "./lib/constants";
-import { createJobs } from "./lib/jobs";
 import { dayOf, lifetime, sumSince } from "./lib/counters";
 
 const DAY = 86_400_000;
@@ -16,7 +15,6 @@ export const FUNNEL_STEPS = [
   "project_created",
   "upload_photo",
   "preview_viewed",
-  "payment_claimed",
   "payment_confirmed",
 ] as const;
 
@@ -197,36 +195,18 @@ export const recentEvents = query({
   },
 });
 
-export const markPaid = mutation({
+/** Publish a celebration without payment: a gift, a test, or making good on a problem. It records no revenue. */
+export const publishFree = mutation({
   args: { projectId: v.id("projects") },
   handler: async (ctx, { projectId }) => {
     const admin = await requireAdmin(ctx);
     const project = await ctx.db.get(projectId);
     if (!project) throw new ConvexError("Project not found.");
+    if (project.status === "paid") return;
     const now = Date.now();
     await ctx.db.patch(projectId, { status: "paid", paidAt: project.paidAt ?? now, updatedAt: now });
-
-    const payments = await ctx.db
-      .query("payments")
-      .withIndex("by_project", (q) => q.eq("projectId", projectId))
-      .collect();
-    const claimed = payments.find((p) => p.status === "claimed");
-    if (claimed) {
-      await ctx.db.patch(claimed._id, { status: "confirmed", confirmedAt: now });
-    } else if (!payments.some((p) => p.status === "confirmed")) {
-      await ctx.db.insert("payments", {
-        projectId,
-        ownerId: project.ownerId,
-        method: "transfer",
-        amountKobo: 2_000_000,
-        status: "confirmed",
-        note: "Marked paid by admin",
-        createdAt: now,
-        confirmedAt: now,
-      });
-    }
-    await createJobs(ctx, { ...project, status: "paid" });
-    await logEvent(ctx, { name: "payment_confirmed", userId: project.ownerId, projectId, props: { by: admin.email ?? "admin" } });
+    await ctx.db.insert("payments", { projectId, ownerId: project.ownerId, method: "comp", amountKobo: 0, status: "confirmed", note: `Published free by ${admin.email ?? "admin"}`, createdAt: now, confirmedAt: now });
+    await logEvent(ctx, { name: "published_free", userId: project.ownerId, projectId, props: { by: admin.email ?? "admin" } });
   },
 });
 
@@ -239,49 +219,6 @@ export const setProjectStatus = mutation({
     const status = action === "suspend" ? "suspended" : project.paidAt ? "paid" : "draft";
     await ctx.db.patch(projectId, { status, updatedAt: Date.now() });
     await logEvent(ctx, { name: `admin_${action}`, userId: project.ownerId, projectId, props: { by: admin.email ?? "admin" } });
-  },
-});
-
-export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
-    await requireAdmin(ctx);
-    return await ctx.storage.generateUploadUrl();
-  },
-});
-
-/** Attach a finished video (made by us) to a customer's project. They can download it from their dashboard. */
-export const attachDeliverable = mutation({
-  args: { projectId: v.id("projects"), label: v.string(), format: v.string(), storageId: v.id("_storage") },
-  handler: async (ctx, { projectId, label, format, storageId }) => {
-    await requireAdmin(ctx);
-    const project = await ctx.db.get(projectId);
-    if (!project) throw new ConvexError("Project not found.");
-    const meta = await ctx.db.system.get(storageId);
-    if (!meta || !(meta.contentType ?? "").startsWith("video/")) {
-      if (meta) await ctx.storage.delete(storageId);
-      throw new ConvexError("Upload a video file.");
-    }
-    const list = [...(project.deliverables ?? []), { label: label.trim().slice(0, 60), format: format.trim().slice(0, 20), storageId }];
-    await ctx.db.patch(projectId, { deliverables: list, updatedAt: Date.now() });
-    const slot = format.trim().toLowerCase();
-    const jobs = await ctx.db.query("jobs").withIndex("by_project", (q) => q.eq("projectId", projectId)).take(4);
-    const open = jobs.find((j) => j.slot === slot && j.status === "open");
-    if (open) await ctx.db.patch(open._id, { status: "cancelled" });
-    await logEvent(ctx, { name: "video_delivered", userId: project.ownerId, projectId, props: { label, format } });
-  },
-});
-
-export const removeDeliverable = mutation({
-  args: { projectId: v.id("projects"), index: v.number() },
-  handler: async (ctx, { projectId, index }) => {
-    await requireAdmin(ctx);
-    const project = await ctx.db.get(projectId);
-    if (!project) return;
-    const list = [...(project.deliverables ?? [])];
-    const [gone] = list.splice(index, 1);
-    if (gone) await ctx.storage.delete(gone.storageId);
-    await ctx.db.patch(projectId, { deliverables: list, updatedAt: Date.now() });
   },
 });
 

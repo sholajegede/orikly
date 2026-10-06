@@ -118,8 +118,6 @@ export const deleteAccount = mutation({
 
     const notes = await ctx.db.query("notes").withIndex("by_user", (q) => q.eq("userId", user._id)).take(200);
     for (const n of notes) await ctx.db.delete(n._id);
-    const creator = await ctx.db.query("creators").withIndex("by_user", (q) => q.eq("userId", user._id)).unique();
-    if (creator) await ctx.db.delete(creator._id);
 
     const sessions = await ctx.db.query("authSessions").withIndex("userId", (q) => q.eq("userId", user._id)).take(100);
     for (const s of sessions) {

@@ -52,7 +52,7 @@ export const RESERVED_SLUGS = new Set([
 
 export const BLOCKED_WORDS = ["fuck", "shit", "porn", "sex", "nude", "xxx", "scam"];
 
-export const PROJECT_STATUSES = ["draft", "payment_claimed", "paid", "suspended"] as const;
+export const PROJECT_STATUSES = ["draft", "paid", "suspended"] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 export function normalizeSlug(input: string): string {

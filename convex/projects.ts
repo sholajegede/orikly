@@ -5,6 +5,8 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { currentUser, isAdminEmail, requireOwnedProject, requireUser } from "./lib/auth";
 import { logEvent } from "./lib/events";
 import { lifetime } from "./lib/counters";
+import { tidyDesign, type SiteDesign } from "./lib/design";
+import { limit } from "./lib/limit";
 import {
   MAX_DRAFTS_PER_USER,
   PALETTES,
@@ -171,11 +173,6 @@ export async function wipeProject(ctx: MutationCtx, project: Doc<"projects">) {
   }
   const wishes = await ctx.db.query("wishes").withIndex("by_project", (q) => q.eq("projectId", project._id)).take(500);
   for (const w of wishes) await ctx.db.delete(w._id);
-  const jobs = await ctx.db.query("jobs").withIndex("by_project", (q) => q.eq("projectId", project._id)).take(10);
-  for (const j of jobs) {
-    if (j.storageId) await ctx.storage.delete(j.storageId);
-    await ctx.db.delete(j._id);
-  }
   if (project.songStorageId) await ctx.storage.delete(project.songStorageId);
   for (const d of project.deliverables ?? []) await ctx.storage.delete(d.storageId);
   await ctx.db.delete(project._id);
@@ -290,34 +287,27 @@ export const update = mutation({
   },
 });
 
-/** Customer says they paid by bank transfer. Admin confirms in the admin app. */
-export const claimTransfer = mutation({
-  args: { id: v.id("projects"), senderName: v.string(), reference: v.optional(v.string()) },
-  handler: async (ctx, { id, senderName, reference }) => {
-    const { user, project } = await requireOwnedProject(ctx, id);
-    if (project.status === "paid") throw new ConvexError("This celebration is already paid.");
+/** Save a design the customer changed by hand. No AI is used, so it is free and unlimited. */
+export const saveDesign = mutation({
+  args: { id: v.id("projects"), design: v.any() },
+  handler: async (ctx, { id, design }) => {
+    const { project } = await requireOwnedProject(ctx, id);
     if (project.status === "suspended") throw new ConvexError("This site is suspended. Contact support.");
-    const sender = senderName.trim().slice(0, 80);
-    if (sender.length < 2) throw new ConvexError("Enter the name on the account you paid from.");
+    await limit(ctx, `design:${id}`, 600, 3_600_000);
+    const assets = await ctx.db.query("assets").withIndex("by_project", (q) => q.eq("projectId", id)).take(100);
+    const ids = assets.filter((a) => a.kind === "photo").sort((a, b) => a.order - b.order).map((a) => a._id as string);
+    const clean = tidyDesign(design, ids, "you");
+    if (!clean) throw new ConvexError("That design could not be saved.");
+    await ctx.db.patch(id, { siteDesign: clean, updatedAt: Date.now() });
+  },
+});
 
-    const photos = await ctx.db
-      .query("assets")
-      .withIndex("by_project", (q) => q.eq("projectId", id))
-      .collect();
-    if (photos.filter((a) => a.kind === "photo").length < 3) throw new ConvexError("Add at least 3 photos first.");
-
-    await ctx.db.insert("payments", {
-      projectId: id,
-      ownerId: user._id,
-      method: "transfer",
-      amountKobo: PRICE_KOBO,
-      status: "claimed",
-      senderName: sender,
-      reference: reference?.trim().slice(0, 60) || undefined,
-      createdAt: Date.now(),
-    });
-    await ctx.db.patch(id, { status: "payment_claimed", updatedAt: Date.now() });
-    await logEvent(ctx, { name: "payment_claimed", userId: user._id, projectId: id, props: { method: "transfer" } });
+/** Go back to the standard template. */
+export const clearDesign = mutation({
+  args: { id: v.id("projects") },
+  handler: async (ctx, { id }) => {
+    await requireOwnedProject(ctx, id);
+    await ctx.db.patch(id, { siteDesign: undefined, updatedAt: Date.now() });
   },
 });
 
@@ -425,7 +415,8 @@ export const publicBySlug = query({
         palette: project.palette,
       },
       coverUrl: cover?.url ?? photos[0]?.url ?? null,
-      photos: photos.map((p) => ({ url: p.url as string, width: p.width, height: p.height })),
+      photos: photos.map((p) => ({ id: p.id as string, url: p.url as string, width: p.width, height: p.height })),
+      design: (project.siteDesign ?? null) as SiteDesign | null,
       videos: videos.map((p) => ({ url: p.url as string })),
       wishes,
       featuredVideoUrl,

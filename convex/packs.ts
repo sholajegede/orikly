@@ -2,9 +2,6 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { currentUser, requireOwnedProject, requireUser } from "./lib/auth";
 import { logEvent } from "./lib/events";
-import { limit } from "./lib/limit";
-import { PACKS } from "./lib/constants";
-import { createJobs } from "./lib/jobs";
 
 export const mine = query({
   args: {},
@@ -13,29 +10,6 @@ export const mine = query({
     if (!user) return null;
     const orders = await ctx.db.query("packOrders").withIndex("by_user", (q) => q.eq("userId", user._id)).order("desc").take(20);
     return { credits: user.credits ?? 0, orders };
-  },
-});
-
-export const claim = mutation({
-  args: { packId: v.string(), senderName: v.string(), reference: v.optional(v.string()) },
-  handler: async (ctx, a) => {
-    const user = await requireUser(ctx);
-    await limit(ctx, `pack:${user._id}`, 5, 3_600_000);
-    const pack = PACKS.find((p) => p.id === a.packId);
-    if (!pack) throw new ConvexError("Pick a pack.");
-    const senderName = a.senderName.trim().slice(0, 80);
-    if (senderName.length < 2) throw new ConvexError("Enter the name on the account you paid from.");
-    await ctx.db.insert("packOrders", {
-      userId: user._id,
-      packId: pack.id,
-      credits: pack.credits,
-      amountKobo: pack.priceKobo,
-      status: "claimed",
-      senderName,
-      reference: a.reference?.trim().slice(0, 60) || undefined,
-      createdAt: Date.now(),
-    });
-    await logEvent(ctx, { name: "pack_claimed", userId: user._id, props: { pack: pack.id } });
   },
 });
 
@@ -53,7 +27,6 @@ export const useCredit = mutation({
     await ctx.db.patch(user._id, { credits: (user.credits ?? 0) - 1 });
     await ctx.db.patch(id, { status: "paid", paidAt: now, updatedAt: now });
     await ctx.db.insert("payments", { projectId: id, ownerId: user._id, method: "credit", amountKobo: 0, status: "confirmed", note: "Pack credit", createdAt: now, confirmedAt: now });
-    await createJobs(ctx, { ...project, status: "paid" });
     await logEvent(ctx, { name: "credit_used", userId: user._id, projectId: id });
   },
 });

@@ -55,6 +55,7 @@ export default defineSchema({
     showOnWall: v.optional(v.boolean()),
     slugChanges: v.optional(v.number()),
     videoPlan: v.optional(v.any()),
+    siteDesign: v.optional(v.any()),
     directedCount: v.optional(v.number()),
     siteStyle: v.string(),
     palette: v.string(),
@@ -99,7 +100,7 @@ export default defineSchema({
   payments: defineTable({
     projectId: v.id("projects"),
     ownerId: v.id("users"),
-    method: v.union(v.literal("transfer"), v.literal("bachs"), v.literal("credit")),
+    method: v.union(v.literal("bachs"), v.literal("credit"), v.literal("comp"), v.literal("transfer")),
     amountKobo: v.number(),
     status: v.union(v.literal("claimed"), v.literal("confirmed"), v.literal("failed"), v.literal("refunded")),
     reference: v.optional(v.string()),
@@ -151,69 +152,6 @@ export default defineSchema({
   })
     .index("by_key", ["key"])
     .index("by_window", ["windowStart"]),
-
-  // People who make videos for customers and get paid per approved video.
-  creators: defineTable({
-    userId: v.id("users"),
-    displayName: v.string(),
-    whatsapp: v.string(),
-    city: v.string(),
-    portfolioUrl: v.optional(v.string()),
-    experience: v.string(),
-    status: v.union(v.literal("pending"), v.literal("approved"), v.literal("suspended"), v.literal("rejected")),
-    balanceKobo: v.number(),
-    lifetimeKobo: v.number(),
-    completed: v.number(),
-    bankName: v.optional(v.string()),
-    accountNumber: v.optional(v.string()),
-    accountName: v.optional(v.string()),
-    createdAt: v.number(),
-    approvedAt: v.optional(v.number()),
-  })
-    .index("by_user", ["userId"])
-    .index("by_status", ["status", "createdAt"]),
-
-  // One job is one video for one paid celebration.
-  jobs: defineTable({
-    projectId: v.id("projects"),
-    slot: v.union(v.literal("portrait"), v.literal("landscape")),
-    style: v.string(),
-    payoutKobo: v.number(),
-    status: v.union(v.literal("open"), v.literal("claimed"), v.literal("submitted"), v.literal("approved"), v.literal("cancelled")),
-    creatorId: v.optional(v.id("creators")),
-    claimedAt: v.optional(v.number()),
-    dueAt: v.optional(v.number()),
-    storageId: v.optional(v.id("_storage")),
-    submittedAt: v.optional(v.number()),
-    reviewNote: v.optional(v.string()),
-    approvedAt: v.optional(v.number()),
-    createdAt: v.number(),
-  })
-    .index("by_status", ["status", "createdAt"])
-    .index("by_status_due", ["status", "dueAt"])
-    .index("by_creator", ["creatorId", "status"])
-    .index("by_project", ["projectId"]),
-
-  ledger: defineTable({
-    creatorId: v.id("creators"),
-    kind: v.union(v.literal("earning"), v.literal("payout"), v.literal("payout_refund")),
-    amountKobo: v.number(),
-    jobId: v.optional(v.id("jobs")),
-    payoutId: v.optional(v.id("payouts")),
-    note: v.optional(v.string()),
-    createdAt: v.number(),
-  }).index("by_creator", ["creatorId", "createdAt"]),
-
-  payouts: defineTable({
-    creatorId: v.id("creators"),
-    amountKobo: v.number(),
-    status: v.union(v.literal("requested"), v.literal("paid"), v.literal("rejected")),
-    reference: v.optional(v.string()),
-    requestedAt: v.number(),
-    resolvedAt: v.optional(v.number()),
-  })
-    .index("by_status", ["status", "requestedAt"])
-    .index("by_creator", ["creatorId", "requestedAt"]),
 
   // Bulk packs: partners (planners, photographers, vendors) buy celebrations in bulk at a lower price each.
   packOrders: defineTable({

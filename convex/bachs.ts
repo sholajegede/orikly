@@ -5,21 +5,17 @@ import { internal } from "./_generated/api";
 import { logEvent } from "./lib/events";
 import { limit } from "./lib/limit";
 import { PACKS, PRICE_KOBO } from "./lib/constants";
-import { createJobs } from "./lib/jobs";
 import { bump } from "./lib/counters";
 import { requireUser } from "./lib/auth";
 
 const naira = (kobo: number) => (kobo / 100).toFixed(2);
 
-/** Which payment routes are switched on. The UI shows online payment first when it is. */
+/** Whether payment is switched on. Every payment goes through Bachs. */
 export const config = query({
   args: {},
   handler: async (ctx) => {
     await requireUser(ctx);
-    return {
-      online: !!process.env.BACHS_API_KEY,
-      transfer: !!(process.env.BANK_NAME && process.env.BANK_ACCOUNT_NUMBER && process.env.BANK_ACCOUNT_NAME),
-    };
+    return { online: !!process.env.BACHS_API_KEY };
   },
 });
 
@@ -65,7 +61,7 @@ async function startCheckout(
   runAttach: (checkoutId: string) => Promise<unknown>,
 ) {
   const key = process.env.BACHS_API_KEY;
-  if (!key) throw new ConvexError("Online payment is not set up yet. Use bank transfer.");
+  if (!key) throw new ConvexError("Payment is not switched on yet. Try again shortly.");
   const base = (process.env.BACHS_API_URL ?? "https://sandbox-api.bachs.io").replace(/\/$/, "");
   const res = await fetch(`${base}/v1/checkout-sessions`, {
     method: "POST",
@@ -151,7 +147,6 @@ export const fulfil = internalMutation({
       if (project.status !== "paid") {
         await ctx.db.patch(project._id, { status: project.status === "suspended" ? "suspended" : "paid", paidAt: project.paidAt ?? now, updatedAt: now });
         await ctx.db.insert("payments", { projectId: project._id, ownerId: project.ownerId, method: "bachs", amountKobo: paidKobo, status: "confirmed", reference: a.reference, createdAt: now, confirmedAt: now });
-        if (project.status !== "suspended") await createJobs(ctx, { ...project, status: "paid" });
         await logEvent(ctx, { name: "payment_confirmed", userId: project.ownerId, projectId: project._id, props: { method: "bachs" } });
       }
     } else if (row.kind === "pack" && row.packId) {
