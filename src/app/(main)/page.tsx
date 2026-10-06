@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Tracker } from "@/components/Tracker";
-import { PhoneSite } from "@/components/PhoneSite";
 import { StyleShowcase } from "@/components/StyleShowcase";
 import { PRICE_LABEL } from "@convex/lib/constants";
 
@@ -11,12 +10,12 @@ const steps = [
   { t: "Sign in with your email", d: "No password. We send you a code." },
   { t: "Add your photos and words", d: "Up to 30 photos and 5 videos, straight from your phone. We shrink them so they use little data." },
   { t: "Pick a style and colors", d: "Choose how your website and your two videos look." },
-  { t: "See it, then pay", d: "Preview your website first. Pay by bank transfer, then share your link." },
+  { t: "See it, then pay", d: "Preview your website first. Pay by card or bank transfer, then share your link." },
 ];
 
 const faqs = [
   { q: "How long do the videos take?", a: "Your website is live as soon as we confirm your payment. Your two videos are made by hand and sent to your dashboard, usually within 24 hours." },
-  { q: "How do I pay?", a: "By bank transfer. After you finish building, you see our account details and the amount. Tell us you have paid and we confirm it, usually within a few hours between 8am and 10pm." },
+  { q: "How do I pay?", a: "By card or bank transfer on a secure payment page. Your website goes live as soon as the payment is confirmed, usually within a minute." },
   { q: "Can I use my own song?", a: "Yes. Upload it and we put it in your two videos. It stays private to your downloadable videos and does not play on the public website." },
   { q: "Can I change things after I pay?", a: "Yes. You can change your photos, words and colors any time from your dashboard." },
   { q: "Can I use my own domain?", a: "Not yet. Every website gets a link like yourname.orikly.ng. Your own domain is coming." },
@@ -27,27 +26,29 @@ export default function Landing() {
   return (
     <>
       <Tracker name="landing_view" />
-      <Header dark />
+      <Header />
       <main>
         <section className="hero-o">
           <div className="wrap hero-grid">
             <div>
-              <span className="chip gold">Weddings, birthdays, anniversaries</span>
+              <p className="occasions">Weddings, birthdays, anniversaries</p>
               <h1 className="chant" aria-label="Praise them properly.">
                 <span className="ln" aria-hidden="true"><span style={{ "--i": 0 } as React.CSSProperties}>Praise them</span></span>
-                <span className="ln gold" aria-hidden="true"><span style={{ "--i": 1 } as React.CSSProperties}>properly.</span></span>
+                <span className="ln zobo" aria-hidden="true"><span style={{ "--i": 1 } as React.CSSProperties}>properly.</span></span>
               </h1>
               <p className="lead">A website and two videos for your celebration. Add your photos and words on your phone, pick a style, and share one link.</p>
               <div className="row actions" style={{ gap: 22 }}>
-                <Link href="/login" className="btn gold">Start free</Link>
+                <Link href="/login" className="btn">Start free</Link>
                 <div className="price-tag"><b>{PRICE_LABEL}</b><span>once. Website and 2 videos.</span></div>
               </div>
-              <p className="small" style={{ marginTop: 14, color: "#a9acd4" }}>You see your preview before you pay.</p>
+              <p className="small muted" style={{ marginTop: 14 }}>You see your preview before you pay.</p>
             </div>
-            <div style={{ position: "relative" }}>
-              <PhoneSite float look={{ a: "#c9235a", b: "#f2b544", bg: "#fff5f7", ink: "#3a1420", card: "#ffffff", font: "'Cormorant Garamond', Georgia, serif", radius: "4px" }} />
-              <span className="tag-float" style={{ left: "-4px", top: "18%" }}>12 new wishes</span>
-              <span className="tag-float" style={{ right: "-4px", bottom: "16%" }}>tolu-and-bisi.orikly.ng</span>
+            <div className="cloth" role="img" aria-label="Adire cloth with a woven label reading Tolu and Bisi">
+              <div className="label">
+                <small>14 February</small>
+                <b>Tolu &amp; Bisi</b>
+                <span>tolu-and-bisi.orikly.ng</span>
+              </div>
             </div>
           </div>
         </section>
