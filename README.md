@@ -45,7 +45,7 @@ Open `/admin` with an email listed in `ADMIN_EMAILS`. It shows the signup funnel
 convex/         schema, auth, and backend functions
 src/app/        pages: landing, login, dashboard, builder, public site, admin
 src/components/ builder steps, site view, shared pieces
-middleware.ts   auth gate and customer subdomain rewrite
+src/proxy.ts    auth gate, admin subdomain and customer subdomain rewrite
 ```
 
 `convex/_generated` is replaced by the real generated files the first time you run `npx convex dev`.
