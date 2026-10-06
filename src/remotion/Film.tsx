@@ -18,11 +18,11 @@ export type FilmData = {
 };
 export type FilmProps = { data: FilmData; format: FilmFormat };
 
-const EASE = Easing.bezier(0.2, 0.8, 0.2, 1);
-const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
-const MONO = '"DM Mono", ui-monospace, Menlo, monospace';
+export const EASE = Easing.bezier(0.2, 0.8, 0.2, 1);
+export const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
+export const MONO = '"DM Mono", ui-monospace, Menlo, monospace';
 
-type Kit = {
+export type Kit = {
   d: SiteDesign;
   u: number;
   tall: boolean;
@@ -32,9 +32,9 @@ type Kit = {
   focus: (id?: string) => string;
   r: number;
 };
-type Ground = { bg: string; fg: string; card: string; soft: string };
+export type Ground = { bg: string; fg: string; card: string; soft: string };
 
-function ground(d: SiteDesign, tone: Scene["tone"]): Ground {
+export function ground(d: SiteDesign, tone: Scene["tone"]): Ground {
   const c = d.colors;
   if (tone === "dark") return { bg: c.ink, fg: c.bg, card: `color-mix(in srgb, ${c.bg} 10%, ${c.ink})`, soft: `color-mix(in srgb, ${c.bg} 62%, ${c.ink})` };
   if (tone === "loud") return { bg: c.loud, fg: c.loudInk, card: c.card, soft: c.loudInk };
@@ -42,15 +42,15 @@ function ground(d: SiteDesign, tone: Scene["tone"]): Ground {
 }
 
 /** Rise into place: used for every piece of type. */
-function rise(frame: number, delay = 0, dur = 16): CSSProperties {
+export function rise(frame: number, delay = 0, dur = 16): CSSProperties {
   const k = interpolate(frame, [delay, delay + dur], [0, 1], { ...clamp, easing: EASE });
   return { opacity: k, transform: `translateY(${(1 - k) * 0.35}em)` };
 }
-function pop(frame: number, delay = 0, dur = 18): number {
+export function pop(frame: number, delay = 0, dur = 18): number {
   return interpolate(frame, [delay, delay + dur], [0, 1], { ...clamp, easing: EASE });
 }
 /** Type that arrives one word at a time, the way a person says it. Words wait in grey, then turn solid. */
-function Words({ text, frame, start = 6, per = 3.2 }: { text: string; frame: number; start?: number; per?: number }) {
+export function Words({ text, frame, start = 6, per = 3.2 }: { text: string; frame: number; start?: number; per?: number }) {
   const words = text.split(/\s+/).filter(Boolean);
   return (
     <>
@@ -64,12 +64,12 @@ function Words({ text, frame, start = 6, per = 3.2 }: { text: string; frame: num
   );
 }
 
-function fit(text: string, sizes: [number, number][], fallback: number): number {
+export function fit(text: string, sizes: [number, number][], fallback: number): number {
   for (const [max, size] of sizes) if (text.length <= max) return size;
   return fallback;
 }
 
-function Marks({ color, u, left, right }: { color: string; u: number; left?: string; right?: string }) {
+export function Marks({ color, u, left, right }: { color: string; u: number; left?: string; right?: string }) {
   const m = 2.2 * u;
   const s = 1.6 * u;
   const corner = (pos: CSSProperties, b: CSSProperties): CSSProperties => ({ position: "absolute", width: s, height: s, borderColor: color, borderStyle: "solid", borderWidth: 0, opacity: 0.6, ...pos, ...b });
@@ -88,11 +88,11 @@ function Marks({ color, u, left, right }: { color: string; u: number; left?: str
   );
 }
 
-function Chip({ k, text }: { k: Kit; text: string }) {
+export function Chip({ k, text }: { k: Kit; text: string }) {
   return <span style={{ background: k.d.colors.hi, color: k.d.colors.hiInk, borderRadius: 999, padding: `${0.5 * k.u}px ${1.6 * k.u}px`, fontFamily: MONO, fontSize: 2 * k.u, whiteSpace: "nowrap" }}>{text}</span>;
 }
 
-function Card({ k, src, focus, style, zoom = 0 }: { k: Kit; src: string; focus: string; style?: CSSProperties; zoom?: number }) {
+export function Card({ k, src, focus, style, zoom = 0 }: { k: Kit; src: string; focus: string; style?: CSSProperties; zoom?: number }) {
   return (
     <div style={{ borderRadius: k.r, overflow: "hidden", background: k.d.colors.card, ...style }}>
       <Img src={src} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: focus, transform: `scale(${1.08 - zoom * 0.08})` }} />
@@ -356,7 +356,7 @@ function Closing({ k }: { k: Kit }) {
   );
 }
 
-function useFonts(d: SiteDesign) {
+export function useFonts(d: SiteDesign) {
   const [handle] = useState(() => delayRender("Loading the film's fonts", { timeoutInMilliseconds: 40_000 }));
   useEffect(() => {
     let alive = true;
@@ -367,15 +367,11 @@ function useFonts(d: SiteDesign) {
   }, [handle, d.fonts.display, d.fonts.body]);
 }
 
-/** The celebration as a film: a title sequence cut from the same design as the website. */
-export function Film({ data, format }: FilmProps) {
-  const d = data.design;
-  const { width, height, fps } = useVideoConfig();
-  useFonts(d);
+export function makeKit(d: SiteDesign, format: FilmFormat, width: number, height: number, photos: { id: string; url: string }[]): Kit {
   const u = Math.min(width, height) / 100;
   const scale = Math.pow(DISPLAY_SCALE[d.fonts.display] ?? 1, 0.6);
-  const urls = new Map(data.photos.map((p) => [p.id, p.url]));
-  const k: Kit = {
+  const urls = new Map(photos.map((p) => [p.id, p.url]));
+  return {
     d,
     u,
     tall: format === "portrait",
@@ -385,6 +381,14 @@ export function Film({ data, format }: FilmProps) {
     photo: (id) => (id ? urls.get(id) : undefined),
     focus: (id) => { const f = id ? d.focus[id] : undefined; return f ? `${Math.round(f[0] * 100)}% ${Math.round(f[1] * 100)}%` : "50% 30%"; },
   };
+}
+
+/** The celebration as a film: a title sequence cut from the same design as the website. */
+export function Film({ data, format }: FilmProps) {
+  const d = data.design;
+  const { width, height, fps } = useVideoConfig();
+  useFonts(d);
+  const k = makeKit(d, format, width, height, data.photos);
   const total = Math.round(filmSeconds(d) * fps);
   const walls = d.film.filter((s) => s.kind === "wall" || s.kind === "line").length;
   let from = 0;
