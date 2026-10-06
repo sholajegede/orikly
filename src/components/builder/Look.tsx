@@ -149,7 +149,7 @@ export function Look({ data, save }: { data: BuilderData; save: (p: ProjectPatch
             ))}
           </div>
           <div className="hint" style={{ margin: "14px 0 8px" }}>Cover photo</div>
-          <div className="thumbs">
+          <div className="cover-thumbs">
             {photos.map((p) => (
               <button key={p._id} className={d.hero.photo === p._id ? "on" : ""} aria-label="Use as cover photo" onClick={() => change({ ...d, hero: { ...d.hero, photo: p._id as string, fx: 0.5, fy: 0.35, extra: (d.hero.extra ?? []).filter((x) => x !== p._id) } })}><img src={p.url as string} alt="" loading="lazy" /></button>
             ))}

@@ -34,6 +34,7 @@ export function InstantVideos({ data }: { data: BuilderData }) {
   const [shape, setShape] = useState<ReelFormat>("portrait");
   const [stage, setStage] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [paused, setPaused] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const paid = project.status === "paid";
@@ -100,7 +101,7 @@ export function InstantVideos({ data }: { data: BuilderData }) {
         if (!s) throw new Error("Direct your videos first.");
         setStage(format === "portrait" ? "Making your tall video (1 of 2)" : "Making your wide video (2 of 2)");
         setProgress(0);
-        const out = await recordReel(s, format, { audio, onProgress: setProgress });
+        const out = await recordReel(s, format, { audio, onProgress: setProgress, onPause: setPaused });
         setStage(format === "portrait" ? "Saving your tall video" : "Saving your wide video");
         setProgress(0);
         const storageId = await uploadToStorage(await genUrl({}), out.blob, out.mime, setProgress);
@@ -110,6 +111,7 @@ export function InstantVideos({ data }: { data: BuilderData }) {
     } catch (e) {
       setError(cleanError(e));
     } finally {
+      setPaused(false);
       setStage(null);
     }
   }
@@ -157,7 +159,7 @@ export function InstantVideos({ data }: { data: BuilderData }) {
             <div className="stack" style={{ gap: 8 }}>
               <b>{stage}</b>
               <div className="bar"><i style={{ width: `${Math.round(progress * 100)}%` }} /></div>
-              <p className="muted small" style={{ margin: 0 }}>Keep this page open and on screen. Each video takes about as long as it plays.</p>
+              {paused ? <p className="err" style={{ margin: 0 }}>Paused. Come back to this page and it carries on from where it stopped.</p> : <p className="muted small" style={{ margin: 0 }}>Keep this page open and on screen. Each video takes about as long as it plays.</p>}
             </div>
           ) : (
             <div className="row">

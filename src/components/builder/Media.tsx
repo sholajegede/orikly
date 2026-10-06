@@ -10,6 +10,9 @@ import { uploadToStorage } from "@/lib/upload";
 import { cleanError, mb } from "@/lib/format";
 import type { BuilderData, ProjectPatch } from "./shared";
 
+const PHOTO_EXT = /\.(jpe?g|png|webp|heic|heif|gif)$/i;
+const VIDEO_EXT = /\.(mp4|mov|m4v|webm|3gp)$/i;
+
 type Item = { key: string; name: string; kind: "photo" | "video"; progress: number; state: "working" | "done" | "error"; error?: string };
 
 async function pool(tasks: (() => Promise<void>)[], size = 3) {
@@ -42,7 +45,8 @@ export function Media({ data, save }: { data: BuilderData; save: (p: ProjectPatc
 
   async function handle(files: File[], kind: "photo" | "video") {
     const room = (kind === "photo" ? MAX_PHOTOS - photos.length : MAX_VIDEOS - videos.length) - items.filter((i) => i.kind === kind && i.state === "working").length;
-    const wanted = files.filter((f) => f.type.startsWith(kind === "photo" ? "image/" : "video/"));
+    // Some phones and browsers give no type, or a wrong one, so the file name counts too.
+    const wanted = files.filter((f) => f.type.startsWith(kind === "photo" ? "image/" : "video/") || (kind === "photo" ? PHOTO_EXT : VIDEO_EXT).test(f.name));
     const chosen = wanted.slice(0, Math.max(0, room));
     const skipped = files.length - chosen.length;
     const fresh: Item[] = chosen.map((f, i) => ({ key: `${Date.now()}-${i}-${f.name}`, name: f.name, kind, progress: 0, state: "working" }));
@@ -55,7 +59,7 @@ export function Media({ data, save }: { data: BuilderData; save: (p: ProjectPatc
       const key = fresh[idx].key;
       try {
         let blob: Blob = file;
-        let contentType = file.type;
+        let contentType = file.type.startsWith("video/") ? file.type : (/\.mov$/i.test(file.name) ? "video/quicktime" : /\.webm$/i.test(file.name) ? "video/webm" : "video/mp4");
         let width: number | undefined;
         let height: number | undefined;
         if (kind === "photo") {

@@ -51,7 +51,7 @@ export function Song({ data, save }: { data: BuilderData; save: (p: ProjectPatch
       )}
 
       <div className="card stack" style={{ gap: 10 }}>
-        <b>Use your own song</b>
+        <b style={{ display: "block", marginBottom: 4 }}>Use your own song</b>
         <span className="muted small">Your song goes into your two downloadable videos only. It does not play on your public website. You confirm you have the right to use it.</span>
         {project.songName ? (
           <div className="stack" style={{ gap: 8 }}>

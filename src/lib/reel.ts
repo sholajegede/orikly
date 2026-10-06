@@ -400,7 +400,7 @@ export function recordingSupport(): { mime: string; ext: "mp4" | "webm" } | null
 export async function recordReel(
   scene: ReelScene,
   format: ReelFormat,
-  opts: { audio?: ArrayBuffer | null; onProgress?: (p: number) => void } = {},
+  opts: { audio?: ArrayBuffer | null; onProgress?: (p: number) => void; onPause?: (paused: boolean) => void } = {},
 ): Promise<{ blob: Blob; mime: string; ext: "mp4" | "webm" }> {
   const support = recordingSupport();
   if (!support) throw new Error("This browser cannot make videos. Try Chrome or Safari.");
@@ -419,7 +419,8 @@ export async function recordReel(
   if (opts.audio) {
     try {
       ac = new AudioContext();
-      await ac.resume();
+      // A browser that blocks sound here must not leave the customer waiting forever.
+      await Promise.race([ac.resume(), new Promise((_, no) => setTimeout(() => no(new Error("sound blocked")), 4000))]);
       const buffer = await ac.decodeAudioData(opts.audio.slice(0));
       const source = ac.createBufferSource();
       source.buffer = buffer;
@@ -447,17 +448,37 @@ export async function recordReel(
   });
 
   recorder.start(1000);
-  const began = performance.now();
+  // The film runs on its own clock, which only moves while the page is on screen. If the customer switches
+  // apps, the recording and the song pause, then carry on from the same frame when they come back.
+  let elapsed = 0;
+  let last = performance.now();
+  const onVisibility = () => {
+    const hidden = document.visibilityState === "hidden";
+    opts.onPause?.(hidden);
+    try {
+      if (hidden && recorder.state === "recording") recorder.pause();
+      if (!hidden && recorder.state === "paused") recorder.resume();
+      if (ac) void (hidden ? ac.suspend() : ac.resume());
+    } catch {
+      /* the recorder may already be stopping */
+    }
+    last = performance.now();
+  };
+  document.addEventListener("visibilitychange", onVisibility);
+  if (document.visibilityState === "hidden") onVisibility();
   await new Promise<void>((resolve) => {
     const tick = () => {
-      const t = (performance.now() - began) / 1000;
-      drawReel(ctx, w, h, Math.min(t, total), scene);
-      opts.onProgress?.(Math.min(t / total, 1));
-      if (t >= total + 0.15) resolve();
+      const now = performance.now();
+      if (document.visibilityState !== "hidden") elapsed += Math.min(now - last, 100) / 1000;
+      last = now;
+      drawReel(ctx, w, h, Math.min(elapsed, total), scene);
+      opts.onProgress?.(Math.min(elapsed / total, 1));
+      if (elapsed >= total + 0.15) resolve();
       else requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   });
+  document.removeEventListener("visibilitychange", onVisibility);
   recorder.stop();
   const blob = await done;
   tracks.forEach((tr) => tr.stop());
