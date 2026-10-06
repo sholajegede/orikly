@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { PACKS, PRICE_KOBO } from "@convex/lib/constants";
 import { Header } from "@/components/Header";
@@ -14,6 +14,8 @@ function Inner() {
   const mine = useQuery(api.packs.mine);
   const bank = useQuery(api.payments.bankDetails);
   const claim = useMutation(api.packs.claim);
+  const cfg = useQuery(api.bachs.config);
+  const pay = useAction(api.bachs.checkoutPack);
   const [packId, setPackId] = useState(params.get("pack") ?? "pack10");
   const [sender, setSender] = useState("");
   const [reference, setReference] = useState("");
@@ -56,6 +58,16 @@ function Inner() {
           ))}
         </div>
 
+        {cfg?.online ? (
+          <div className="card stack" style={{ gap: 10 }}>
+            <h3 style={{ fontSize: 22 }}>Pay {naira(pack.priceKobo)}</h3>
+            <p className="muted" style={{ margin: 0 }}>Pay by card or bank transfer. Your credits appear here by themselves once the payment is confirmed.</p>
+            {error ? <div className="err">{error}</div> : null}
+            <div><button className="btn gold" disabled={busy} onClick={() => { setBusy(true); setError(null); void pay({ packId }).then((url) => { window.location.href = url; }).catch((e) => { setError(cleanError(e)); setBusy(false); }); }}>{busy ? "Opening payment page…" : `Pay ${naira(pack.priceKobo)}`}</button></div>
+          </div>
+        ) : null}
+
+        {cfg && !cfg.online ? (
         <div className="card stack">
           <h3 style={{ fontSize: 22 }}>Pay {naira(pack.priceKobo)} by bank transfer</h3>
           {bank === undefined ? <p className="muted">Loading…</p> : bank === null ? (
@@ -76,6 +88,7 @@ function Inner() {
             <button className="btn" disabled={busy || !sender.trim()}>{busy ? "Sending…" : "I have paid"}</button>
           </form>
         </div>
+        ) : null}
 
         {mine && mine.orders.length ? (
           <div className="card stack" style={{ gap: 8 }}>
