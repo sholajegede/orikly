@@ -1,48 +1,60 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Header } from "@/components/Header";
+import { SiteFooter } from "@/components/SiteFooter";
+import { COMPANY } from "@/lib/company";
+import { LEGAL, type Block } from "@/lib/legal";
 
-const docs: Record<string, { title: string; body: string[] }> = {
-  terms: {
-    title: "Terms of use",
-    body: [
-      "DRAFT. These terms are a working draft and must be reviewed by a Nigerian lawyer before launch.",
-      "Orikly makes a celebration website and two videos from the photos, videos, words and songs you upload. You confirm that you own or have permission to use everything you upload, including every song and every person in your photos.",
-      "You pay a one-time fee. We make your website available as long as Orikly operates. We may remove a website that breaks the law, or that is abusive, hateful or sexual, or that uses someone else's work without permission.",
-      "If someone says your content belongs to them, we may take it down while we check.",
-    ],
-  },
-  privacy: {
-    title: "Privacy",
-    body: [
-      "DRAFT. This notice must be reviewed by a Nigerian lawyer, including the requirements of the Nigeria Data Protection Act 2023, before launch.",
-      "We collect your email, the content you upload, and how you use Orikly (for example which steps you finish). We use this to run the service, help you, and improve the product. We do not sell your data.",
-      "Visitors to a celebration website are counted without names or phone numbers. We do not use advertising trackers on celebration websites.",
-      "You can ask us to delete your account and everything you uploaded. Contact support from your dashboard.",
-    ],
-  },
-  refunds: {
-    title: "Refunds",
-    body: [
-      "DRAFT. Review with a lawyer before launch.",
-      "If we cannot deliver your website or videos within 48 hours of confirming your payment and we cannot fix the problem, we refund you in full.",
-      "After you have downloaded your final videos, we do not refund the payment.",
-    ],
-  },
-};
+type Props = { params: Promise<{ doc: string }> };
+const slugOf = (h: string) => h.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-export default async function Legal({ params }: { params: Promise<{ doc: string }> }) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { doc } = await params;
-  const d = docs[doc];
+  return { title: LEGAL[doc]?.title ?? "Legal" };
+}
+
+function Part({ b }: { b: Block }) {
+  if (typeof b === "string") return <p>{b}</p>;
+  if ("list" in b) return <ul>{b.list.map((x) => <li key={x}>{x}</li>)}</ul>;
+  return (
+    <div className="scroll-x">
+      <table className="tbl legal-tbl">
+        <thead><tr>{b.head.map((h) => <th key={h}>{h}</th>)}</tr></thead>
+        <tbody>{b.table.map((r) => <tr key={r[0]}><td><b>{r[0]}</b></td><td>{r[1]}</td><td>{r[2]}</td></tr>)}</tbody>
+      </table>
+    </div>
+  );
+}
+
+export default async function Legal({ params }: Props) {
+  const { doc } = await params;
+  const d = LEGAL[doc];
   if (!d) notFound();
   return (
-    <main className="wrap narrow" style={{ padding: "40px 16px" }}>
-      <Link href="/" className="logo">Orikly<i>.</i></Link>
-      <h1 className="display" style={{ fontSize: 44, margin: "24px 0 16px" }}>{d.title}</h1>
-      <div className="stack">
-        {d.body.map((p) => (
-          <p key={p} className="muted" style={{ margin: 0 }}>{p}</p>
-        ))}
-      </div>
-    </main>
+    <>
+      <Header />
+      <main className="wrap legal">
+        <aside>
+          <p className="tagline">Legal</p>
+          <nav aria-label="Legal documents">
+            {Object.entries(LEGAL).map(([k, v]) => <Link key={k} href={`/legal/${k}`} aria-current={k === doc ? "page" : undefined}>{v.title}</Link>)}
+          </nav>
+        </aside>
+        <article>
+          <h1>{d.title}</h1>
+          <p className="tagline muted">Last updated {COMPANY.updated}</p>
+          <p className="legal-intro">{d.intro}</p>
+          <nav className="toc" aria-label="On this page">{d.sections.map((s) => <a key={s.h} href={`#${slugOf(s.h)}`}>{s.h}</a>)}</nav>
+          {d.sections.map((s) => (
+            <section key={s.h} id={slugOf(s.h)}>
+              <h2>{s.h}</h2>
+              {s.body.map((b, i) => <Part key={i} b={b} />)}
+            </section>
+          ))}
+        </article>
+      </main>
+      <SiteFooter />
+    </>
   );
 }
