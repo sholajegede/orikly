@@ -41,6 +41,7 @@ export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
   if (ROOT && host.endsWith("." + ROOT)) {
     const sub = host.slice(0, -(ROOT.length + 1));
     if (sub && !sub.includes(".") && !RESERVED.has(sub)) {
+      if (path.startsWith("/s/")) return;
       const url = request.nextUrl.clone();
       url.pathname = `/s/${sub}`;
       return NextResponse.rewrite(url);
