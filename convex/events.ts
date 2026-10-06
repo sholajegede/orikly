@@ -5,7 +5,7 @@ import { normalizeSlug } from "./lib/constants";
 import { bump } from "./lib/counters";
 
 // Busy events only add to a sharded counter. No row is stored, so a viral page cannot flood the table.
-const COUNT_ONLY = new Set(["landing_view", "site_view", "footer_click", "photo_open", "video_play", "share_click", "creators_view", "packs_view"]);
+const COUNT_ONLY = new Set(["landing_view", "site_view", "footer_click", "photo_open", "video_play", "share_click", "creators_view", "packs_view", "map_open", "gift_copy"]);
 // Names a visitor without an account may send.
 const ANON_OK = new Set([...COUNT_ONLY, "login_code_sent"]);
 

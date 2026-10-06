@@ -159,6 +159,14 @@ export const update = mutation({
       story: v.optional(v.string()),
       message: v.optional(v.string()),
       wishesOn: v.optional(v.boolean()),
+      showOnWall: v.optional(v.boolean()),
+      venue: v.optional(v.string()),
+      eventTime: v.optional(v.string()),
+      dressCode: v.optional(v.string()),
+      mapUrl: v.optional(v.string()),
+      giftBank: v.optional(v.string()),
+      giftAccountName: v.optional(v.string()),
+      giftAccountNumber: v.optional(v.string()),
       siteStyle: v.optional(v.string()),
       palette: v.optional(v.string()),
       videoStyles: v.optional(v.array(v.string())),
@@ -194,6 +202,27 @@ export const update = mutation({
     if (patch.story !== undefined) next.story = clip(patch.story, 2000) || undefined;
     if (patch.message !== undefined) next.message = clip(patch.message, 4000) || undefined;
     if (patch.wishesOn !== undefined) next.wishesOn = patch.wishesOn;
+    if (patch.showOnWall !== undefined) next.showOnWall = patch.showOnWall;
+    if (patch.venue !== undefined) next.venue = clip(patch.venue, 140) || undefined;
+    if (patch.eventTime !== undefined) {
+      if (patch.eventTime && !/^\d{2}:\d{2}$/.test(patch.eventTime)) throw new ConvexError("Use a valid time.");
+      next.eventTime = patch.eventTime || undefined;
+    }
+    if (patch.dressCode !== undefined) next.dressCode = clip(patch.dressCode, 80) || undefined;
+    if (patch.mapUrl !== undefined) {
+      const m = clip(patch.mapUrl, 300) || "";
+      if (m && !/^https:\/\/(maps\.app\.goo\.gl|goo\.gl\/maps|(www\.)?google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.apple\.com)\//i.test(m)) {
+        throw new ConvexError("Paste a Google Maps or Apple Maps link.");
+      }
+      next.mapUrl = m || undefined;
+    }
+    if (patch.giftBank !== undefined) next.giftBank = clip(patch.giftBank, 60) || undefined;
+    if (patch.giftAccountName !== undefined) next.giftAccountName = clip(patch.giftAccountName, 80) || undefined;
+    if (patch.giftAccountNumber !== undefined) {
+      const n = patch.giftAccountNumber.replace(/\D/g, "");
+      if (n && n.length !== 10) throw new ConvexError("An account number has 10 digits.");
+      next.giftAccountNumber = n || undefined;
+    }
     if (patch.siteStyle !== undefined) {
       if (!SITE_STYLES.some((s) => s.id === patch.siteStyle)) throw new ConvexError("Unknown style.");
       next.siteStyle = patch.siteStyle;
@@ -253,6 +282,51 @@ export const claimTransfer = mutation({
   },
 });
 
+/** The public wall: live celebrations whose owners chose to show them. Newest first. */
+export const wall = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, { limit: n }) => {
+    const rows = await ctx.db
+      .query("projects")
+      .withIndex("by_wall", (q) => q.eq("showOnWall", true))
+      .order("desc")
+      .take(Math.min(Math.max(n ?? 24, 1), 48));
+    const live = rows.filter((p) => p.status === "paid");
+    return await Promise.all(
+      live.map(async (p) => ({ slug: p.slug, names: p.names, occasion: p.occasion, palette: p.palette, coverUrl: await assetUrl(ctx, p.coverAssetId) })),
+    );
+  },
+});
+
+const MAX_INSTANT_BYTES = 150 * 1024 * 1024;
+
+/** Save a video the customer just made in their browser. One per shape; making it again replaces it. */
+export const addInstantVideo = mutation({
+  args: { id: v.id("projects"), storageId: v.id("_storage"), format: v.union(v.literal("portrait"), v.literal("landscape")) },
+  handler: async (ctx, { id, storageId, format }) => {
+    const { user, project } = await requireOwnedProject(ctx, id);
+    const meta = await ctx.db.system.get(storageId);
+    const fail = async (msg: string) => {
+      if (meta) await ctx.storage.delete(storageId);
+      throw new ConvexError(msg);
+    };
+    if (project.status !== "paid") await fail("Your videos are saved once your celebration is live.");
+    if (!meta || !(meta.contentType ?? "").startsWith("video/")) await fail("That file is not a video.");
+    if (meta!.size > MAX_INSTANT_BYTES) await fail("That video is too large.");
+
+    const label = format === "portrait" ? "Instant video, tall" : "Instant video, wide";
+    const list = [...(project.deliverables ?? [])];
+    const at = list.findIndex((d) => d.label === label);
+    if (at >= 0) {
+      await ctx.storage.delete(list[at].storageId);
+      list.splice(at, 1);
+    }
+    list.unshift({ label, format, storageId });
+    await ctx.db.patch(id, { deliverables: list, updatedAt: Date.now() });
+    await logEvent(ctx, { name: "video_instant", userId: user._id, projectId: id, props: { format } });
+  },
+});
+
 /** What a visitor (or the owner, before payment) sees on the public site. */
 export const publicBySlug = query({
   args: { slug: v.string() },
@@ -301,6 +375,13 @@ export const publicBySlug = query({
         story: project.story ?? null,
         message: project.message ?? null,
         wishesOn: project.wishesOn,
+        venue: project.venue ?? null,
+        eventTime: project.eventTime ?? null,
+        dressCode: project.dressCode ?? null,
+        mapUrl: project.mapUrl ?? null,
+        gift: project.giftBank && project.giftAccountNumber && project.giftAccountName
+          ? { bank: project.giftBank, name: project.giftAccountName, number: project.giftAccountNumber }
+          : null,
         siteStyle: project.siteStyle,
         palette: project.palette,
       },

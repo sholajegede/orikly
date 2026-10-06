@@ -42,6 +42,16 @@ export default defineSchema({
     story: v.optional(v.string()),
     message: v.optional(v.string()),
     wishesOn: v.boolean(),
+    venue: v.optional(v.string()),
+    eventTime: v.optional(v.string()),
+    dressCode: v.optional(v.string()),
+    mapUrl: v.optional(v.string()),
+    giftBank: v.optional(v.string()),
+    giftAccountName: v.optional(v.string()),
+    giftAccountNumber: v.optional(v.string()),
+    showOnWall: v.optional(v.boolean()),
+    videoPlan: v.optional(v.any()),
+    directedCount: v.optional(v.number()),
     siteStyle: v.string(),
     palette: v.string(),
     videoStyles: v.array(v.string()),
@@ -59,7 +69,8 @@ export default defineSchema({
   })
     .index("by_slug", ["slug"])
     .index("by_owner", ["ownerId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_wall", ["showOnWall", "paidAt"]),
 
   assets: defineTable({
     projectId: v.id("projects"),

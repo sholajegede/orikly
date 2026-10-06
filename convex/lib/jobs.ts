@@ -3,8 +3,12 @@ import type { Doc } from "../_generated/dataModel";
 import { CREATOR_PAYOUT_KOBO } from "./constants";
 import { bump } from "./counters";
 
-/** Turn a paid celebration into two open video jobs. Safe to call twice. */
+/**
+ * Turn a paid celebration into two open jobs for human editors. Safe to call twice.
+ * Off by default: videos are directed by AI and made in the browser. Set EDITOR_JOBS=on to bring the editor queue back.
+ */
 export async function createJobs(ctx: MutationCtx, project: Doc<"projects">) {
+  if (process.env.EDITOR_JOBS !== "on") return;
   const existing = await ctx.db.query("jobs").withIndex("by_project", (q) => q.eq("projectId", project._id)).first();
   if (existing) return;
   const styles = project.videoStyles.length ? project.videoStyles : ["cinematic"];

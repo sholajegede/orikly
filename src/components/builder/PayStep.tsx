@@ -7,6 +7,7 @@ import { PRICE_KOBO } from "@convex/lib/constants";
 import { cleanError, naira, shortDate, siteUrl } from "@/lib/format";
 import { useTrack } from "@/lib/track";
 import type { BuilderData } from "./shared";
+import { InstantVideos } from "./InstantVideos";
 
 const wa = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP;
 
@@ -29,6 +30,7 @@ export function PayStep({ data }: { data: BuilderData }) {
   const cfg = useQuery(api.bachs.config);
   const checkout = useAction(api.bachs.checkoutProject);
   const useCredit = useMutation(api.packs.useCredit);
+  const setWall = useMutation(api.projects.update);
   const setWish = useMutation(api.wishes.setStatus);
   const [sender, setSender] = useState("");
   const [reference, setReference] = useState("");
@@ -36,6 +38,19 @@ export function PayStep({ data }: { data: BuilderData }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => { track("preview_viewed", { slug: project.slug }); }, [project.slug]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Tell the ad platforms about the sale once, the first time this browser sees the celebration live.
+  useEffect(() => {
+    if (project.status !== "paid") return;
+    try {
+      const k = `orikly_purchase_${project._id}`;
+      if (window.localStorage.getItem(k)) return;
+      window.localStorage.setItem(k, "1");
+      track("purchase_seen", { slug: project.slug, naira: PRICE_KOBO / 100, id: project._id });
+    } catch {
+      /* ignore */
+    }
+  }, [project.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const photos = assets.filter((a) => a.kind === "photo").length;
   const url = siteUrl(project.slug);
@@ -67,6 +82,8 @@ export function PayStep({ data }: { data: BuilderData }) {
         <div className="hint">Only you can see the preview until payment is confirmed.</div>
       </div>
 
+      <InstantVideos data={data} />
+
       {project.status === "suspended" ? <div className="card err">This site is suspended. Please contact support.</div> : null}
 
       {project.status === "draft" && (me?.credits ?? 0) > 0 ? (
@@ -82,10 +99,10 @@ export function PayStep({ data }: { data: BuilderData }) {
       {project.status === "draft" && cfg?.online ? (
         <div className="card stack" style={{ gap: 10 }}>
           <div className="row between"><h3 style={{ fontSize: 22 }}>Pay {naira(PRICE_KOBO)}</h3><span className="chip">One time</span></div>
-          <p className="muted" style={{ margin: 0 }}>Pay securely by card or bank transfer. This page updates by itself as soon as the payment is confirmed.</p>
+          <p className="muted" style={{ margin: 0 }}>Pay by card or transfer. The moment your payment enters, this page updates by itself.</p>
           {error ? <div className="err">{error}</div> : null}
           <div>
-            <button className="btn gold" disabled={busy || !ready} onClick={() => { setBusy(true); setError(null); void checkout({ projectId: project._id }).then((url) => { window.location.href = url; }).catch((e) => { setError(cleanError(e)); setBusy(false); }); }}>{busy ? "Opening payment page…" : `Pay ${naira(PRICE_KOBO)}`}</button>
+            <button className="btn gold" disabled={busy || !ready} onClick={() => { setBusy(true); setError(null); track("checkout_started", { slug: project.slug, naira: PRICE_KOBO / 100 }); void checkout({ projectId: project._id }).then((url) => { window.location.href = url; }).catch((e) => { setError(cleanError(e)); setBusy(false); }); }}>{busy ? "Opening payment page…" : `Pay ${naira(PRICE_KOBO)}`}</button>
           </div>
           {!ready ? <div className="hint">Add at least 3 photos first.</div> : null}
           {cfg.transfer ? <details><summary className="small muted" style={{ cursor: "pointer" }}>Pay by manual bank transfer instead</summary><div style={{ marginTop: 12 }}><div className="stack">
@@ -141,7 +158,7 @@ export function PayStep({ data }: { data: BuilderData }) {
       {project.status === "payment_claimed" ? (
         <div className="card stack" style={{ gap: 8 }}>
           <h3 style={{ fontSize: 22 }}>We are confirming your payment</h3>
-          <p className="muted" style={{ margin: 0 }}>Thank you. We check payments between 8am and 10pm. Your website goes live as soon as we confirm, and we start your two videos then.</p>
+          <p className="muted" style={{ margin: 0 }}>Thank you. We check transfers between 8am and 10pm. Your website goes live as soon as we confirm, and you can direct your two videos right away.</p>
         </div>
       ) : null}
 
@@ -150,6 +167,10 @@ export function PayStep({ data }: { data: BuilderData }) {
           <div className="card stack" style={{ gap: 12 }}>
             <div className="row between"><h3 style={{ fontSize: 22 }}>Your website is live</h3><span className="chip ok">Live</span></div>
             <CopyRow label="Your link" value={url} />
+            <label className="row" style={{ cursor: "pointer", alignItems: "flex-start" }}>
+              <input type="checkbox" checked={!!project.showOnWall} onChange={(e) => void setWall({ id: project._id, patch: { showOnWall: e.target.checked } })} style={{ width: 22, height: 22, marginTop: 2 }} />
+              <span className="grow"><b>Show it on the wall of praise</b><span className="hint" style={{ display: "block" }}>Off by default. When on, your names, cover photo and link appear on orikly.ng for anyone to see. Turn it off any time.</span></span>
+            </label>
             <div className="row">
               <a className="btn" href={`https://wa.me/?text=${encodeURIComponent(share)}`} target="_blank" rel="noreferrer" onClick={() => track("share_click", { slug: project.slug, props: { channel: "whatsapp" } })}>Share on WhatsApp</a>
               <a className="btn ghost" href={previewHref} target="_blank" rel="noreferrer">Open website</a>
@@ -157,9 +178,9 @@ export function PayStep({ data }: { data: BuilderData }) {
           </div>
 
           <div className="card stack" style={{ gap: 12 }}>
-            <h3 style={{ fontSize: 22 }}>Your videos</h3>
+            <h3 style={{ fontSize: 22 }}>Downloads</h3>
             {deliverables.length === 0 ? (
-              <p className="muted" style={{ margin: 0 }}>We are making your two videos now. They usually take up to 24 hours. They appear here, and we message you when they are ready.</p>
+              <p className="muted" style={{ margin: 0 }}>Direct your videos above. When they are saved, they appear here to download.</p>
             ) : (
               deliverables.map((d, i) => (
                 <div key={i} className="row between card" style={{ padding: 12 }}>

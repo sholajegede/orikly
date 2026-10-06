@@ -53,13 +53,18 @@ const TILES: Record<Textile, Tile> = {
   },
 };
 
-/** A seamless textile as a CSS background-image value. */
-export function textileUrl(kind: Textile, fg: string, bg: string, scale = 1): string {
+/** A seamless textile tile as an SVG data URL. */
+export function textileDataUrl(kind: Textile, fg: string, bg: string, scale = 1): string {
   const t = TILES[kind];
   const w = t.w * scale;
   const h = t.h * scale;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${t.w} ${t.h}">${t.body(fg, bg)}</svg>`;
-  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+/** The same tile as a CSS background-image value. */
+export function textileUrl(kind: Textile, fg: string, bg: string, scale = 1): string {
+  return `url("${textileDataUrl(kind, fg, bg, scale)}")`;
 }
 
 export function textileSize(kind: Textile, scale = 1): string {
