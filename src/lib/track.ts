@@ -3,6 +3,10 @@
 import { useCallback } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
+import { adEvent, type AdEvent } from "./ads";
+
+// Product events that are also conversions for the ad platforms (sent only with consent).
+const AD_MAP: Record<string, AdEvent> = { login_verified: "CompleteRegistration", preview_viewed: "ViewContent", checkout_started: "InitiateCheckout", purchase_seen: "Purchase" };
 
 function safeSession(): Storage | null {
   try {
@@ -26,7 +30,8 @@ export function getAnonId(): string {
 export function captureSource(): string | undefined {
   const s = safeSession();
   const params = new URLSearchParams(window.location.search);
-  const found = params.get("ref") ?? params.get("utm_source") ?? params.get("src");
+  const paid = params.get("fbclid") ? "meta-ad" : params.get("ttclid") ? "tiktok-ad" : params.get("gclid") ? "google-ad" : null;
+  const found = params.get("ref") ?? params.get("utm_source") ?? params.get("src") ?? paid;
   if (found) s?.setItem("orikly_src", found.slice(0, 60));
   const stored = s?.getItem("orikly_src");
   if (stored) return stored;
@@ -48,7 +53,9 @@ function device(): string {
 export function useTrack() {
   const track = useMutation(api.events.track);
   return useCallback(
-    (name: string, extra?: { slug?: string; props?: Record<string, string | number | boolean> }) => {
+    (name: string, extra?: { slug?: string; props?: Record<string, string | number | boolean>; naira?: number; id?: string }) => {
+      const ad = AD_MAP[name];
+      if (ad) adEvent(ad, { naira: extra?.naira, id: extra?.id });
       void track({
         name,
         anonId: getAnonId(),
