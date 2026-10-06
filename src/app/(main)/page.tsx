@@ -5,6 +5,7 @@ import { Tracker } from "@/components/Tracker";
 import { PhoneSite } from "@/components/PhoneSite";
 import { StyleShowcase } from "@/components/StyleShowcase";
 import { SiteFooter } from "@/components/SiteFooter";
+import { TenMinutes } from "@/components/TenMinutes";
 import { WallGrid } from "@/components/WallGrid";
 import { getWall } from "@/lib/wall";
 import { textileSize, textileUrl, type Textile } from "@/lib/textile";
@@ -23,14 +24,6 @@ const facts = [
   { n: "2", u: "videos", d: "Tall and wide. Directed by AI from your own photos, after you pay." },
   { n: PRICE_LABEL, u: "once", d: "No monthly fee. Build it free. Pay when it sweets you." },
   { n: "0", u: "apps", d: "Nothing to download. It opens in the browser on any phone." },
-];
-
-const minutes = [
-  { at: "0:00", t: "Sign in", d: "Type your email, enter the code. No password." },
-  { at: "1:00", t: "Add photos", d: "Up to 30, straight from your gallery. We shrink them so they do not finish your data." },
-  { at: "5:00", t: "Say something", d: "Your names, your story, the hall and the colors of the day." },
-  { at: "8:00", t: "See it", d: "You see your whole website before you pay one naira." },
-  { at: "10:00", t: "Share it", d: "Pay once. Drop the link in the family group chat." },
 ];
 
 const extras = [
@@ -90,7 +83,7 @@ export default async function Landing() {
           </div>
         </section>
 
-        <section className="wrap">
+        <section className="wrap" style={{ paddingBottom: "clamp(48px, 7vw, 96px)" }}>
           <div className="facts-x">
             {facts.map((f) => (
               <div key={f.u}><div className="n">{f.n}<span>{f.u}</span></div><p>{f.d}</p></div>
@@ -98,21 +91,13 @@ export default async function Landing() {
           </div>
         </section>
 
-        <section className="bandx" id="how">
+        <section className="bandx espresso" id="how">
           <div className="wrap">
             <div className="sect-head">
-              <h2>Ten minutes. Sharp sharp.</h2>
-              <Link href="/login" className="btn">Start free</Link>
+              <h2 className="big">Ten minutes. <em>Sharp sharp.</em></h2>
+              <Link href="/login" className="btn hot">Start free</Link>
             </div>
-            <div className="cells five">
-              {minutes.map((m) => (
-                <div className="cell" key={m.at}>
-                  <span className="clock">{m.at}</span>
-                  <h3>{m.t}</h3>
-                  <p>{m.d}</p>
-                </div>
-              ))}
-            </div>
+            <TenMinutes />
           </div>
         </section>
 
@@ -134,7 +119,7 @@ export default async function Landing() {
           <div className="wrap feat flip">
             <div>
               <span className="num">02.</span>
-              <h2>Two videos in two minutes</h2>
+              <h2>Two videos, directed for you</h2>
               <p>One tall for WhatsApp status and Instagram. One wide for the hall screen. An AI director studies your photos, finds every face and cuts the film to your song.</p>
               <Link href="/login" className="btn">Start free</Link>
             </div>
