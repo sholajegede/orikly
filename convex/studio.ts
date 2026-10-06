@@ -6,7 +6,7 @@ import { internal } from "./_generated/api";
 import { requireOwnedProject, requireUser } from "./lib/auth";
 import { logEvent } from "./lib/events";
 import { limit } from "./lib/limit";
-import { COST } from "./lib/constants";
+import { COST, MIN_LETTERS } from "./lib/constants";
 import { spend } from "./packs";
 import { BODY_FONTS, DISPLAY_FONTS, HERO_LAYOUTS, RADII, SCENE_KINDS, SECTION_TYPES, TONES, tidyDesign, type SiteDesign } from "./lib/design";
 
@@ -28,7 +28,7 @@ export const available = query({
   },
 });
 
-type Run = { design: boolean; films: boolean; charged: number };
+type Run = { design: boolean; films: boolean; letters: boolean; charged: number };
 
 /** Put a paid celebration in the studio queue. `charged` is what the customer paid for this run, in credits. */
 export async function startStudio(ctx: MutationCtx, projectId: Id<"projects">, run: Run) {
@@ -36,40 +36,45 @@ export async function startStudio(ctx: MutationCtx, projectId: Id<"projects">, r
   if (!p || p.status !== "paid") return;
   if (p.studio && p.studio.stage !== "done" && p.studio.stage !== "failed") throw new ConvexError("The studio is already working on this.");
   await ctx.db.patch(projectId, { studio: { stage: "queued", runs: (p.studio?.runs ?? 0) + 1, at: Date.now(), ...run } });
-  await ctx.scheduler.runAfter(0, internal.studio.kick, { projectId, design: run.design, films: run.films });
+  await ctx.scheduler.runAfter(0, internal.studio.kick, { projectId, design: run.design, films: run.films, letters: run.letters });
 }
 
 /**
  * More work on a live celebration, paid for in credits:
  *   redesign: a new design, and the films made again if the celebration has them,
- *   films:    the two films, for the first time or again after the customer edited the website.
+ *   films:    the two films, for the first time or again after the customer edited the website,
+ *   letters:  the "Open when…" page and its film, for the first time, or the film again after edits.
  */
 export const run = mutation({
-  args: { id: v.id("projects"), what: v.union(v.literal("redesign"), v.literal("films")) },
+  args: { id: v.id("projects"), what: v.union(v.literal("redesign"), v.literal("films"), v.literal("letters")) },
   handler: async (ctx, { id, what }) => {
     const { user, project } = await requireOwnedProject(ctx, id);
     if (project.status !== "paid") throw new ConvexError("Publish this celebration first.");
     await limit(ctx, `studio:${user._id}`, 8, 3_600_000);
     const has = !!project.hasFilms || (project.deliverables ?? []).some((d) => d.label.startsWith("Your film"));
-    const cost = what === "redesign" ? COST.redesign : has ? COST.refilm * 2 : COST.film * 2;
-    const label = what === "redesign" ? "New design" : has ? "Films made again" : "Two films";
+    const ready = (project.letters ?? []).filter((l) => l.when.trim() && l.text.trim()).length;
+    if (what === "letters" && ready < MIN_LETTERS) throw new ConvexError(`Write at least ${MIN_LETTERS} letters first.`);
+    const cost = what === "redesign" ? COST.redesign : what === "letters" ? (project.lettersOn ? COST.refilm * 2 : COST.letters) : has ? COST.refilm * 2 : COST.film * 2;
+    const label = what === "redesign" ? "New design" : what === "letters" ? (project.lettersOn ? "Letters film made again" : "Open when letters") : has ? "Films made again" : "Two films";
     if (project.studio && project.studio.stage !== "done" && project.studio.stage !== "failed") throw new ConvexError("The studio is already working on this.");
     await spend(ctx, user._id, id, cost, label);
-    await startStudio(ctx, id, { design: what === "redesign", films: what === "films" || has, charged: cost });
+    if (what === "letters") await ctx.db.patch(id, { lettersOn: true });
+    // A new design changes the look of everything, so every film the celebration has is made again.
+    await startStudio(ctx, id, { design: what === "redesign", films: what === "films" || (what === "redesign" && has), letters: what === "letters" || (what === "redesign" && !!project.lettersFilm), charged: cost });
     await logEvent(ctx, { name: "studio_run", userId: user._id, projectId: id, props: { what, credits: cost } });
   },
 });
 
 export const kick = internalAction({
-  args: { projectId: v.id("projects"), design: v.boolean(), films: v.boolean() },
-  handler: async (ctx, { projectId, design, films }) => {
+  args: { projectId: v.id("projects"), design: v.boolean(), films: v.boolean(), letters: v.boolean() },
+  handler: async (ctx, { projectId, design, films, letters }) => {
     const key = process.env.TRIGGER_SECRET_KEY;
     const fail = (note: string) => ctx.runMutation(internal.studio.setStage, { projectId, stage: "failed", note });
     if (!key) return void (await fail("The studio is not switched on yet."));
     const res = await fetch("https://api.trigger.dev/api/v1/tasks/produce-celebration/trigger", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" },
-      body: JSON.stringify({ payload: { projectId, design, films } }),
+      body: JSON.stringify({ payload: { projectId, design, films, letters } }),
     });
     if (!res.ok) {
       console.error("Could not start the studio job", res.status, await res.text());
@@ -97,6 +102,9 @@ export const setStage = internalMutation({
     await ctx.db.patch(a.projectId, {
       studio: { ...was, stage: a.stage, note: a.note?.slice(0, 200), at: Date.now(), charged },
       ...(a.stage === "done" && was.films ? { hasFilms: true } : {}),
+      ...(a.stage === "done" && was.letters ? { lettersFilm: true } : {}),
+      // A first set of letters that failed was refunded, so it is taken down again.
+      ...(a.stage === "failed" && was.letters && !was.design && !p.lettersFilm ? { lettersOn: false } : {}),
     });
     if (a.stage === "done" || a.stage === "failed") await logEvent(ctx, { name: `studio_${a.stage}`, userId: p.ownerId, projectId: a.projectId, props: a.note ? { note: a.note.slice(0, 120) } : undefined });
   },
@@ -118,6 +126,7 @@ export const gather = internalQuery({
       photos,
       clips,
       songUrl: p.songStorageId ? await ctx.storage.getUrl(p.songStorageId) : null,
+      letters: (p.letters ?? []).filter((l) => l.when.trim() && l.text.trim()).map((l) => ({ id: l.id, when: l.when, text: l.text, photo: (l.photo as string | undefined) ?? null, opensOn: l.opensOn ?? null })),
       design: (p.siteDesign?.v === 2 ? p.siteDesign : null) as SiteDesign | null,
       site: {
         slug: p.slug, occasion: p.occasion, names: p.names, eventDate: p.eventDate ?? null, eventTime: p.eventTime ?? null, venue: p.venue ?? null, mapUrl: p.mapUrl ?? null,
@@ -160,17 +169,18 @@ const MAX_FILM_BYTES = 200 * 1024 * 1024;
 
 /** A finished film from the studio. One per shape; a new one replaces the old one. */
 export const saveFilm = internalMutation({
-  args: { projectId: v.id("projects"), storageId: v.id("_storage"), format: v.union(v.literal("portrait"), v.literal("landscape")) },
-  handler: async (ctx, { projectId, storageId, format }) => {
+  args: { projectId: v.id("projects"), storageId: v.id("_storage"), format: v.union(v.literal("portrait"), v.literal("landscape")), letters: v.optional(v.boolean()) },
+  handler: async (ctx, { projectId, storageId, format, letters }) => {
     const p = await ctx.db.get(projectId);
     const meta = await ctx.db.system.get(storageId);
     if (!p || !meta || !(meta.contentType ?? "").startsWith("video/") || meta.size > MAX_FILM_BYTES) {
       if (meta) await ctx.storage.delete(storageId);
       throw new ConvexError("That film could not be saved.");
     }
-    const label = format === "portrait" ? "Your film, tall" : "Your film, wide";
+    const kind = letters ? "Open when film" : "Your film";
+    const label = `${kind}, ${format === "portrait" ? "tall" : "wide"}`;
     const list = (p.deliverables ?? []).filter((d) => {
-      const same = d.format === format;
+      const same = d.format === format && d.label.startsWith(kind);
       if (same) void ctx.storage.delete(d.storageId).catch(() => {});
       return !same;
     });

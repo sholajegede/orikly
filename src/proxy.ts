@@ -43,7 +43,7 @@ export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
     if (sub && !sub.includes(".") && !RESERVED.has(sub)) {
       if (path.startsWith("/s/")) return;
       const url = request.nextUrl.clone();
-      url.pathname = `/s/${sub}`;
+      url.pathname = path === "/open-when" ? `/s/${sub}/open-when` : `/s/${sub}`;
       return NextResponse.rewrite(url);
     }
   }

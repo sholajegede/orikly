@@ -21,7 +21,7 @@ export const config = query({
 });
 
 export const prepare = internalMutation({
-  args: { userId: v.id("users"), kind: v.union(v.literal("project"), v.literal("credits")), credits: v.number(), projectId: v.optional(v.id("projects")), films: v.optional(v.boolean()) },
+  args: { userId: v.id("users"), kind: v.union(v.literal("project"), v.literal("credits")), credits: v.number(), projectId: v.optional(v.id("projects")), films: v.optional(v.boolean()), letters: v.optional(v.boolean()) },
   handler: async (ctx, a) => {
     const user = await ctx.db.get(a.userId);
     if (!user?.email) throw new ConvexError("Add an email to your account first.");
@@ -34,12 +34,12 @@ export const prepare = internalMutation({
       if (project.status === "suspended") throw new ConvexError("This site is suspended. Contact support.");
       const assets = await ctx.db.query("assets").withIndex("by_project", (q) => q.eq("projectId", project._id)).take(40);
       if (assets.filter((x) => x.kind === "photo").length < 3) throw new ConvexError("Add at least 3 photos first.");
-      const need = COST.site + (a.films ? COST.film * 2 : 0);
+      const need = COST.site + (a.films ? COST.film * 2 : 0) + (a.letters ? COST.letters : 0);
       if ((user.credits ?? 0) + a.credits < need) throw new ConvexError("That is not enough credits for this celebration.");
     }
     const amountKobo = creditPriceKobo(a.credits);
     const reference = `ok_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
-    await ctx.db.insert("checkouts", { reference, kind: a.kind, userId: a.userId, projectId: a.projectId, credits: a.credits, films: a.films, amountKobo, status: "open", createdAt: Date.now() });
+    await ctx.db.insert("checkouts", { reference, kind: a.kind, userId: a.userId, projectId: a.projectId, credits: a.credits, films: a.films, letters: a.letters, amountKobo, status: "open", createdAt: Date.now() });
     return { reference, amountKobo, email: user.email, name: user.name ?? undefined };
   },
 });
@@ -89,11 +89,11 @@ const siteUrl = () => (process.env.SITE_URL ?? "http://localhost:3000").replace(
 
 /** Buy the credits a draft needs and publish it in one payment. */
 export const checkoutProject = action({
-  args: { projectId: v.id("projects"), credits: v.number(), films: v.boolean() },
-  handler: async (ctx, { projectId, credits, films }): Promise<string> => {
+  args: { projectId: v.id("projects"), credits: v.number(), films: v.boolean(), letters: v.optional(v.boolean()) },
+  handler: async (ctx, { projectId, credits, films, letters }): Promise<string> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Please sign in.");
-    const prep = await ctx.runMutation(internal.bachs.prepare, { userId, kind: "project", projectId, credits, films });
+    const prep = await ctx.runMutation(internal.bachs.prepare, { userId, kind: "project", projectId, credits, films, letters });
     return await startCheckout(
       userId,
       prep,
@@ -151,7 +151,7 @@ export const fulfil = internalMutation({
     await logEvent(ctx, { name: "payment_confirmed", userId: user._id, projectId: row.projectId, props: { method: "bachs", credits } });
     if (row.kind === "project" && row.projectId) {
       try {
-        await publishWithCredits(ctx, user._id, row.projectId, row.films !== false);
+        await publishWithCredits(ctx, user._id, row.projectId, row.films !== false, !!row.letters);
       } catch (e) {
         // The credits are safe in the account. The customer can publish from the last step.
         console.error("Paid, but could not publish", row.projectId, e);

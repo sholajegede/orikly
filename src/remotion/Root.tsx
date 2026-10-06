@@ -2,6 +2,7 @@ import { Composition } from "remotion";
 import "../app/globals.css";
 import { filmSeconds } from "@convex/lib/design";
 import { FILM_FPS, FILM_SIZE, Film, type FilmProps } from "./Film";
+import { Letters, lettersSeconds, type LettersProps } from "./Letters";
 import { SHOT_VIEW, Shot, type ShotProps } from "./Shot";
 
 /** What the studio job can render: the film in either shape, and still photographs of the website. */
@@ -19,6 +20,19 @@ export function Root() {
         calculateMetadata={({ props }) => {
           const p = props as unknown as FilmProps;
           return { ...FILM_SIZE[p.format], durationInFrames: Math.max(30, Math.round(filmSeconds(p.data.design) * FILM_FPS)) };
+        }}
+      />
+      <Composition
+        id="Letters"
+        component={Letters as unknown as React.ComponentType<Record<string, unknown>>}
+        fps={FILM_FPS}
+        width={1080}
+        height={1920}
+        durationInFrames={300}
+        defaultProps={{ format: "portrait" } as unknown as Record<string, unknown>}
+        calculateMetadata={({ props }) => {
+          const p = props as unknown as LettersProps;
+          return { ...FILM_SIZE[p.format], durationInFrames: Math.max(30, Math.round(lettersSeconds(p.data.letters) * FILM_FPS)) };
         }}
       />
       <Composition

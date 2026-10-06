@@ -13,18 +13,20 @@ import { Words } from "@/components/builder/Words";
 import { Song } from "@/components/builder/Song";
 import { Look } from "@/components/builder/Look";
 import { Guests } from "@/components/builder/Guests";
+import { Letters as LettersStep } from "@/components/builder/Letters";
 import { PayStep } from "@/components/builder/PayStep";
 import { useSave } from "@/components/builder/shared";
 import { cleanError, siteUrl } from "@/lib/format";
 
 const STEPS = [
   { tab: "Basics", title: "Who and when", why: "Start with the three things every celebration needs. Everything else comes later, one step at a time." },
-  { tab: "Photos", title: "Your photos and clips", why: "These become the gallery on your website and the two videos. Add at least 3 photos. More good photos make a better video." },
-  { tab: "Words", title: "Your words", why: "Say it your way. Your words go on the website and into your videos. Every box here is optional." },
+  { tab: "Photos", title: "Your photos and clips", why: "These become the wall on your website and the scenes of your films. Add at least 3 photos. More good photos make a better film." },
+  { tab: "Words", title: "Your words", why: "Say it your way. The studio pulls its best lines from what you write here, for the website and the films. The more you write, the better they get." },
   { tab: "For guests", title: "For your guests", why: "Optional. Where to come, what to wear and where to send a gift. Skip it if this is not that kind of celebration." },
-  { tab: "Song", title: "Your song", why: "The music that plays under your two videos." },
+  { tab: "Song", title: "Your song", why: "The music that plays under your films." },
   { tab: "Look", title: "The look", why: "How your website looks to guests." },
-  { tab: "Pay", title: "See it, then pay", why: "Open your website the way guests will see it. Pay once and it goes live, then your designer and video director get to work." },
+  { tab: "Letters", title: "Open when…", why: "An optional extra. Letters for the days ahead, each one sealed until it is needed. Skip it if you only want the website and films." },
+  { tab: "Pay", title: "See it, then pay", why: "Open your website the way guests will see it. Go live with credits, then the studio designs your website and makes your films." },
 ];
 
 function DeleteCelebration({ id, slug }: { id: Id<"projects">; slug: string }) {
@@ -110,7 +112,8 @@ export default function Builder() {
           {step === 3 ? <Guests data={data} save={save} /> : null}
           {step === 4 ? <Song data={data} save={save} /> : null}
           {step === 5 ? <Look data={data} save={save} /> : null}
-          {step === 6 ? <PayStep data={data} /> : null}
+          {step === 6 ? <LettersStep data={data} /> : null}
+          {step === 7 ? <PayStep data={data} /> : null}
         </div>
 
         <div className="savebar">

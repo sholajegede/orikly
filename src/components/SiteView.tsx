@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@convex/_generated/api";
@@ -29,6 +30,7 @@ export function SiteView({ slug, initial }: { slug: string; initial?: SiteData }
   const addWish = useMutation(api.wishes.add);
   const track = useTrack();
   const viewed = useRef(false);
+  const preview = usePathname().startsWith("/app/preview");
   const root = useRef<HTMLDivElement>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [guest, setGuest] = useState("");
@@ -166,6 +168,7 @@ export function SiteView({ slug, initial }: { slug: string; initial?: SiteData }
         <SiteCanvas
           data={canvas}
           banner={banner}
+          letters={data.letters.length && (data.lettersOn || isOwner) ? { href: preview ? `/app/preview/${slug}/open-when` : `/s/${slug}/open-when`, count: data.letters.length } : undefined}
           onTrack={(name, props) => track(name, { slug, props })}
           onWish={async (name, message, website) => { try { await addWish({ slug, guestName: name, message, website: website || undefined }); } catch (e) { throw new Error(cleanError(e)); } }}
           onShare={() => { track("share_click", { slug, props: { channel: "whatsapp" } }); window.open(`https://wa.me/?text=${encodeURIComponent(`${site.names}: ${window.location.href}`)}`, "_blank", "noopener"); }}

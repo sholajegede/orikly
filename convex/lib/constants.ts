@@ -2,7 +2,10 @@
 
 // Everything is bought with credits. One credit is about NGN 1,000, less when more are bought at once.
 /** What each thing costs, in credits. */
-export const COST = { site: 5, film: 2, redesign: 3, refilm: 1 } as const;
+export const COST = { site: 5, film: 2, redesign: 3, refilm: 1, letters: 3 } as const;
+/** "Open when…" letters: how few make a set, and how many fit. */
+export const MIN_LETTERS = 3;
+export const MAX_LETTERS = 12;
 /** A website and both films. */
 export const FULL_CREDITS = COST.site + COST.film * 2;
 /** The amounts of credits that can be bought. The starter covers one full celebration with 3 credits to spare. */

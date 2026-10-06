@@ -208,7 +208,7 @@ export const publishFree = mutation({
     await ctx.db.patch(projectId, { status: "paid", paidAt: project.paidAt ?? now, updatedAt: now });
     await ctx.db.insert("payments", { projectId, ownerId: project.ownerId, method: "comp", amountKobo: 0, status: "confirmed", note: `Published free by ${admin.email ?? "admin"}`, createdAt: now, confirmedAt: now });
     await logEvent(ctx, { name: "published_free", userId: project.ownerId, projectId, props: { by: admin.email ?? "admin" } });
-    await startStudio(ctx, projectId, { design: true, films: true, charged: 0 });
+    await startStudio(ctx, projectId, { design: true, films: true, letters: false, charged: 0 });
   },
 });
 

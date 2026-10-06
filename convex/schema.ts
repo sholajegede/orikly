@@ -57,8 +57,12 @@ export default defineSchema({
     videoPlan: v.optional(v.any()),
     siteDesign: v.optional(v.any()),
     // What the studio is doing for this celebration. `charged` credits go back to the customer if a run fails.
-    studio: v.optional(v.object({ stage: v.string(), runs: v.number(), at: v.number(), note: v.optional(v.string()), charged: v.optional(v.number()), design: v.optional(v.boolean()), films: v.optional(v.boolean()) })),
+    studio: v.optional(v.object({ stage: v.string(), runs: v.number(), at: v.number(), note: v.optional(v.string()), charged: v.optional(v.number()), design: v.optional(v.boolean()), films: v.optional(v.boolean()), letters: v.optional(v.boolean()) })),
     hasFilms: v.optional(v.boolean()),
+    // "Open when…" letters: an add-on page of sealed envelopes, with its own film.
+    letters: v.optional(v.array(v.object({ id: v.string(), when: v.string(), text: v.string(), photo: v.optional(v.id("assets")), opensOn: v.optional(v.string()) }))),
+    lettersOn: v.optional(v.boolean()),
+    lettersFilm: v.optional(v.boolean()),
     directedCount: v.optional(v.number()),
     siteStyle: v.string(),
     palette: v.string(),
@@ -180,6 +184,7 @@ export default defineSchema({
     packId: v.optional(v.string()),
     credits: v.optional(v.number()),
     films: v.optional(v.boolean()),
+    letters: v.optional(v.boolean()),
     amountKobo: v.number(),
     status: v.union(v.literal("open"), v.literal("paid")),
     checkoutId: v.optional(v.string()),

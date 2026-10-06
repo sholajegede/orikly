@@ -7,7 +7,8 @@ import { logger, task } from "@trigger.dev/sdk";
  * Makes one paid celebration, start to finish, with nobody watching:
  *   1. the art director designs the website and the film,
  *   2. the website is photographed and the art director reviews its own work, twice,
- *   3. both films are rendered with the customer's song and saved.
+ *   3. both films are rendered with the customer's song and saved,
+ *   4. the "Open when…" film is rendered too, when the customer wrote letters.
  * The backend half is convex/studio.ts. Both sides hold STUDIO_SECRET.
  */
 const REVIEWS = 2;
@@ -29,7 +30,7 @@ export const produce = task({
   id: "produce-celebration",
   maxDuration: 2400,
   retry: { maxAttempts: 1 },
-  run: async ({ projectId, design = true, films = true }: { projectId: string; design?: boolean; films?: boolean }) => {
+  run: async ({ projectId, design = true, films = true, letters = false }: { projectId: string; design?: boolean; films?: boolean; letters?: boolean }) => {
     const site = process.env.CONVEX_SITE_URL ?? process.env.NEXT_PUBLIC_CONVEX_SITE_URL;
     const secret = process.env.STUDIO_SECRET;
     if (!site || !secret) throw new Error("Set STUDIO_SECRET and NEXT_PUBLIC_CONVEX_SITE_URL for the studio job.");
@@ -64,7 +65,7 @@ export const produce = task({
         webpackOverride: (config) => ({ ...config, resolve: { ...config.resolve, alias: { ...(config.resolve?.alias ?? {}), "@convex": path.join(root, "convex"), "@": path.join(root, "src") } } }),
       });
 
-      type Gathered = { design: unknown; site: Record<string, unknown>; photos: { id: string; url: string }[]; clips: { id: string; url: string }[]; songUrl: string | null };
+      type Gathered = { design: unknown; site: Record<string, unknown>; letters: unknown[]; photos: { id: string; url: string }[]; clips: { id: string; url: string }[]; songUrl: string | null };
       const canvas = (g: Gathered) => ({ design: g.design, live: true, site: g.site, photos: g.photos, clips: g.clips, films: [], wishes: [] });
 
       for (let round = 1; design && round <= REVIEWS; round++) {
@@ -83,7 +84,7 @@ export const produce = task({
         logger.log(`Review ${round}`, { notes: review.notes });
       }
 
-      const g = await call<Gathered & { site: { names: string; occasion: string; eventDate: string | null } }>("gather");
+      const g = await call<Gathered & { site: { slug: string; names: string; occasion: string; eventDate: string | null } }>("gather");
       const moment = ((g.design as { sections?: { type: string; title?: string; after?: string }[] }).sections ?? []).find((s) => s.type === "moment");
       const data = { design: g.design, names: g.site.names, occasion: g.site.occasion, eventDate: g.site.eventDate, momentTitle: moment?.title, momentAfter: moment?.after, photos: g.photos, clips: g.clips, songUrl: g.songUrl };
       for (const [n, format] of (films ? (["portrait", "landscape"] as const) : []).entries()) {
@@ -93,6 +94,22 @@ export const produce = task({
         const outputLocation = path.join(work, `${format}.mp4`);
         await renderMedia({ composition, serveUrl, codec: "h264", crf: 22, outputLocation, inputProps, timeoutInMilliseconds: 120_000, onProgress: ({ progress }) => { if (Math.round(progress * 100) % 25 === 0) logger.log(`${format} ${Math.round(progress * 100)}%`); } });
         await call("film", { storageId: await store(outputLocation, "video/mp4"), format });
+      }
+      if (letters && g.letters.length > 0) {
+        const d = g.design as { closing?: { sign?: string }; sections?: { sign?: string }[] };
+        const sign = d.closing?.sign ?? d.sections?.find((s) => s.sign)?.sign ?? "";
+        const from = sign.includes(",") ? sign.split(",").pop()!.trim() : "";
+        const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+        const link = root ? `${g.site.slug}.${root}/open-when` : undefined;
+        const lettersData = { design: g.design, names: g.site.names, from: from || undefined, link, letters: g.letters, photos: g.photos, songUrl: g.songUrl };
+        for (const [n, format] of (["portrait", "landscape"] as const).entries()) {
+          await stage("filming", `Letters film ${n + 1} of 2`);
+          const inputProps = { data: lettersData, format };
+          const composition = await selectComposition({ serveUrl, id: "Letters", inputProps });
+          const outputLocation = path.join(work, `letters-${format}.mp4`);
+          await renderMedia({ composition, serveUrl, codec: "h264", crf: 22, outputLocation, inputProps, timeoutInMilliseconds: 120_000 });
+          await call("film", { storageId: await store(outputLocation, "video/mp4"), format, letters: true });
+        }
       }
       await stage("done");
       return { ok: true };

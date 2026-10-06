@@ -11,6 +11,7 @@ import {
   MAX_DRAFTS_PER_USER,
   PALETTES,
   PRICE_KOBO,
+  MAX_LETTERS,
   SITE_STYLES,
   SONG_LIBRARY,
   VIDEO_STYLES,
@@ -287,6 +288,26 @@ export const update = mutation({
   },
 });
 
+/** Save the "Open when…" letters. Writing and editing them is free; publishing the set costs credits. */
+export const saveLetters = mutation({
+  args: { id: v.id("projects"), letters: v.array(v.object({ id: v.string(), when: v.string(), text: v.string(), photo: v.optional(v.id("assets")), opensOn: v.optional(v.string()) })) },
+  handler: async (ctx, { id, letters }) => {
+    const { project } = await requireOwnedProject(ctx, id);
+    if (project.status === "suspended") throw new ConvexError("This site is suspended. Contact support.");
+    await limit(ctx, `letters:${id}`, 600, 3_600_000);
+    const assets = await ctx.db.query("assets").withIndex("by_project", (q) => q.eq("projectId", id)).take(100);
+    const photos = new Set(assets.filter((a) => a.kind === "photo").map((a) => a._id as string));
+    const seen = new Set<string>();
+    const clean = letters.slice(0, MAX_LETTERS).flatMap((l) => {
+      const key = l.id.replace(/[^a-z0-9]/gi, "").slice(0, 16);
+      if (!key || seen.has(key)) return [];
+      seen.add(key);
+      return [{ id: key, when: l.when.trim().slice(0, 48), text: l.text.slice(0, 1500), photo: l.photo && photos.has(l.photo) ? l.photo : undefined, opensOn: l.opensOn && /^\d{4}-\d{2}-\d{2}$/.test(l.opensOn) ? l.opensOn : undefined }];
+    });
+    await ctx.db.patch(id, { letters: clean, updatedAt: Date.now() });
+  },
+});
+
 /** Save a design the customer changed by hand. No AI is used, so it is free and unlimited. */
 export const saveDesign = mutation({
   args: { id: v.id("projects"), design: v.any() },
@@ -360,8 +381,8 @@ export const publicBySlug = query({
       .filter((w) => w.status === "approved")
       .map((w) => ({ guestName: w.guestName, message: w.message, createdAt: w.createdAt }));
 
-    const made = live ? await Promise.all((project.deliverables ?? []).map(async (d) => ({ format: d.format, url: await ctx.storage.getUrl(d.storageId) }))) : [];
-    const films = made.filter((f): f is { format: string; url: string } => !!f.url);
+    const made = live ? await Promise.all((project.deliverables ?? []).map(async (d) => ({ format: d.format, letters: d.label.startsWith("Open when"), url: await ctx.storage.getUrl(d.storageId) }))) : [];
+    const films = made.filter((f): f is { format: string; letters: boolean; url: string } => !!f.url);
     const featuredVideoUrl = films[0]?.url ?? null;
 
     return {
@@ -390,7 +411,11 @@ export const publicBySlug = query({
       photos: photos.map((p) => ({ id: p.id as string, url: p.url as string, width: p.width, height: p.height })),
       design: (project.siteDesign?.v === 2 ? project.siteDesign : null) as SiteDesign | null,
       videos: videos.map((p) => ({ id: p.id as string, url: p.url as string })),
-      films,
+      films: films.filter((f) => !f.letters),
+      // Letters are shown once the set is published. The owner sees them before that, to preview.
+      letters: project.lettersOn || isOwner ? (project.letters ?? []).filter((l) => l.when.trim() && l.text.trim()).map((l) => ({ id: l.id, when: l.when, text: l.text, photo: (l.photo as string | undefined) ?? null, opensOn: l.opensOn ?? null })) : [],
+      lettersOn: !!project.lettersOn,
+      lettersFilms: films.filter((f) => f.letters),
       wishes,
       featuredVideoUrl,
     };

@@ -12,6 +12,7 @@ const faqs = [
   { q: "Can I change my photos after paying?", a: "Yes. Your website updates right away. Making your films again after a change costs 2 credits." },
   { q: "Can I edit my website myself?", a: "Yes, for free, as often as you like. Open your celebration and go to Look. Change the colors, the lettering, the cover photo, and move, rename or hide any part of the page." },
   { q: "How do I pay?", a: "On the last step, by card or bank transfer on a secure payment page. You are buying credits, and your website goes live by itself the moment the payment enters. Nobody has to approve it." },
+  { q: "What are Open when… letters?", a: "Short letters for the days ahead, each sealed in its own envelope: Open when you're tired, Open when you miss me. Write them on the Letters step, free. Publishing the set costs 3 credits and gives you a page and a film." },
   { q: "What are credits?", a: "Credits pay for what the studio makes. A website is 5, each film is 2, a whole new design is 3, and making your films again is 1 each. Editing by hand is free. ₦10,000 buys 12, and they never expire." },
   { q: "Where are my files?", a: "Files, in the menu. Every photo, clip, song and finished video is there to download." },
   { q: "How do I delete everything?", a: "Settings, then Delete account. To remove one celebration only, open it and use Delete at the bottom of Basics." },

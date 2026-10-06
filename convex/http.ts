@@ -91,6 +91,6 @@ studioRoute("/studio/gather", (ctx, b) => ctx.runQuery(internal.studio.gather, {
 studioRoute("/studio/stage", (ctx, b) => ctx.runMutation(internal.studio.setStage, { projectId: b.projectId as Pid, stage: b.stage as "designing", note: b.note as string | undefined }));
 studioRoute("/studio/design", (ctx, b) => ctx.runAction(internal.studio.design, { projectId: b.projectId as Pid, shots: b.shots as Id<"_storage">[] | undefined }));
 studioRoute("/studio/upload", async (ctx) => ({ url: await ctx.runMutation(internal.studio.uploadUrl, {}) }));
-studioRoute("/studio/film", (ctx, b) => ctx.runMutation(internal.studio.saveFilm, { projectId: b.projectId as Pid, storageId: b.storageId as Id<"_storage">, format: b.format as "portrait" }));
+studioRoute("/studio/film", (ctx, b) => ctx.runMutation(internal.studio.saveFilm, { projectId: b.projectId as Pid, storageId: b.storageId as Id<"_storage">, format: b.format as "portrait", letters: b.letters === true }));
 
 export default http;

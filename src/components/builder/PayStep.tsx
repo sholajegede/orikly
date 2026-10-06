@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { COST, creditPriceKobo, creditStepFor, STARTER_CREDITS } from "@convex/lib/constants";
+import { COST, MIN_LETTERS, creditPriceKobo, creditStepFor, STARTER_CREDITS } from "@convex/lib/constants";
 import { cleanError, naira, shortDate, siteUrl } from "@/lib/format";
 import { useTrack } from "@/lib/track";
 import type { BuilderData } from "./shared";
@@ -29,6 +29,7 @@ export function PayStep({ data }: { data: BuilderData }) {
   const checkout = useAction(api.bachs.checkoutProject);
   const publish = useMutation(api.packs.publish);
   const [films, setFilms] = useState(true);
+  const [letters, setLetters] = useState(false);
   const setWall = useMutation(api.projects.update);
   const setWish = useMutation(api.wishes.setStatus);
   const [busy, setBusy] = useState(false);
@@ -54,9 +55,11 @@ export function PayStep({ data }: { data: BuilderData }) {
   const previewHref = `/app/preview/${project.slug}`;
   const ready = photos >= 3;
   const have = me?.credits ?? 0;
-  const need = COST.site + (films ? COST.film * 2 : 0);
+  const lettersReady = (project.letters ?? []).filter((l) => l.when.trim() && l.text.trim()).length;
+  const withLetters = letters && lettersReady >= MIN_LETTERS;
+  const need = COST.site + (films ? COST.film * 2 : 0) + (withLetters ? COST.letters : 0);
   // Someone starting from nothing gets the starter, which leaves credits over. Otherwise, the smallest top-up that covers it.
-  const buy = have === 0 && films ? STARTER_CREDITS : creditStepFor(need - have);
+  const buy = have === 0 && films ? Math.max(STARTER_CREDITS, creditStepFor(need)) : creditStepFor(need - have);
 
   const share = `Come and see our celebration page: ${url}`;
 
@@ -86,20 +89,29 @@ export function PayStep({ data }: { data: BuilderData }) {
               </div>
               <em>{COST.film * 2} credits</em>
             </label>
+            {lettersReady >= MIN_LETTERS ? (
+              <label style={{ cursor: "pointer" }}>
+                <div className="row" style={{ gap: 12, flexWrap: "nowrap", alignItems: "flex-start" }}>
+                  <input type="checkbox" checked={letters} onChange={(e) => setLetters(e.target.checked)} style={{ width: 22, height: 22, flex: "0 0 auto", marginTop: 2 }} />
+                  <div><b>Open when… letters</b><span>Your {lettersReady} letters as sealed envelopes on their own page, with their own film.</span></div>
+                </div>
+                <em>{COST.letters} credits</em>
+              </label>
+            ) : null}
             <div className="total"><div><b>Total</b></div><em>{need} credits</em></div>
           </div>
           {error ? <div className="err">{error}</div> : null}
           {have >= need ? (
             <>
-              <div><button className="btn gold" disabled={busy || !ready} onClick={() => { setBusy(true); setError(null); void publish({ id: project._id, films }).catch((e) => setError(cleanError(e))).finally(() => setBusy(false)); }}>{busy ? "Publishing…" : `Use ${need} credits and go live`}</button></div>
+              <div><button className="btn gold" disabled={busy || !ready} onClick={() => { setBusy(true); setError(null); void publish({ id: project._id, films, letters: withLetters }).catch((e) => setError(cleanError(e))).finally(() => setBusy(false)); }}>{busy ? "Publishing…" : `Use ${need} credits and go live`}</button></div>
               <div className="hint">You will have {have - need} credit{have - need === 1 ? "" : "s"} left.</div>
             </>
           ) : cfg?.online ? (
             <>
               <div>
-                <button className="btn gold" disabled={busy || !ready} onClick={() => { setBusy(true); setError(null); track("checkout_started", { slug: project.slug, naira: creditPriceKobo(buy) / 100 }); void checkout({ projectId: project._id, credits: buy, films }).then((url) => { window.location.href = url; }).catch((e) => { setError(cleanError(e)); setBusy(false); }); }}>{busy ? "Opening payment page…" : `Pay ${naira(creditPriceKobo(buy))} and go live`}</button>
+                <button className="btn gold" disabled={busy || !ready} onClick={() => { setBusy(true); setError(null); track("checkout_started", { slug: project.slug, naira: creditPriceKobo(buy) / 100 }); void checkout({ projectId: project._id, credits: buy, films, letters: withLetters }).then((url) => { window.location.href = url; }).catch((e) => { setError(cleanError(e)); setBusy(false); }); }}>{busy ? "Opening payment page…" : `Pay ${naira(creditPriceKobo(buy))} and go live`}</button>
               </div>
-              <div className="hint">That buys {buy} credits. This celebration uses {need}{have ? ` (you already have ${have})` : ""}, so you keep {have + buy - need} for a new design or your next celebration. Pay by card or bank transfer on a secure page. Your website goes live by itself the moment the payment enters. <a href="/pricing" target="_blank" rel="noreferrer">See all prices</a>.</div>
+              <div className="hint">That buys {buy} credits. This celebration uses {need}{have ? ` (you already have ${have})` : ""}, so you keep {have + buy - need}{have + buy - need > 0 ? " for a new design, Open when… letters or your next celebration" : ""}. Pay by card or bank transfer on a secure page. Your website goes live by itself the moment the payment enters. <a href="/pricing" target="_blank" rel="noreferrer">See all prices</a>.</div>
             </>
           ) : null}
           {!ready ? <div className="hint">Add at least 3 photos first.</div> : null}

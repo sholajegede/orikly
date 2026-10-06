@@ -1074,3 +1074,47 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .cost-rows.tight span { font-size: 14px; }
 .cost-rows .total { border-bottom: 0; }
 .cost-rows .total em { font-size: 17px; color: var(--hot); }
+
+/* "Open when…": the card on the celebration page, the envelopes, the open letter */
+.cz-open { display: block; text-decoration: none; background: var(--ink); color: var(--bg); border-radius: calc(var(--r) + 4px); padding: clamp(28px, 6vw, 56px) 24px; text-align: center; margin-bottom: 68px; }
+.cz-open .cz-lab { color: color-mix(in srgb, var(--bg) 70%, transparent); }
+.cz-open h2 { font-size: calc(clamp(3rem, 12vw, 6rem) * var(--ds)); line-height: 0.95; margin: 8px 0 10px; }
+.cz-open p { margin: 0 auto 22px; max-width: 34ch; font-size: 1.1rem; }
+.cz-letters .cz-top a { text-decoration: none; }
+.cz-letters .cz-hero h1 .l { display: inline-block; margin: 0 0.12em; }
+.cz-letters .cz-hero .sub { text-align: center; }
+.cz-envs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 14px; padding-block: 36px 72px; }
+@media (min-width: 720px) { .cz-envs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 22px; } }
+@media (min-width: 1000px) { .cz-envs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.cz-env { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; display: grid; gap: 4px; justify-items: start; align-content: start; --e: var(--card); --ei: var(--ink); --es: var(--loud-deep); }
+.cz-env.loud { --e: var(--loud); --ei: var(--loud-ink); --es: var(--loud-ink); }
+.cz-env.dark { --e: var(--ink); --ei: var(--bg); --es: var(--hi); }
+.cz-env .env { position: relative; display: block; width: 100%; aspect-ratio: 3 / 2; margin-bottom: 10px; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.cz-env:hover .env { transform: translateY(-4px) rotate(-1.2deg); }
+.cz-env .env i { position: absolute; display: block; font-style: normal; }
+.cz-env .body { inset: 0; background: linear-gradient(color-mix(in srgb, var(--ei) 7%, var(--e)), color-mix(in srgb, var(--ei) 7%, var(--e))) bottom / 100% 100% no-repeat, var(--e); border-radius: 12px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14); background: var(--e); }
+.cz-env .body::after { content: ""; position: absolute; inset: 0; clip-path: polygon(0 100%, 50% 46%, 100% 100%); background: color-mix(in srgb, var(--ei) 7%, var(--e)); border-radius: 12px; }
+.cz-env .flap { left: 0; right: 0; top: 0; height: 52%; clip-path: polygon(0 0, 100% 0, 50% 96%); background: color-mix(in srgb, var(--ei) 13%, var(--e)); border-radius: 12px 12px 0 0; transform-origin: 50% 0; transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s; z-index: 2; }
+.cz-env .paper { left: 8%; right: 8%; top: 10%; height: 80%; background: var(--card); border-radius: 6px; transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s; box-shadow: 0 0 0 1px var(--line); }
+.cz-env .seal { left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px; border-radius: 50%; background: var(--es); color: var(--e); display: grid; place-items: center; font-size: 13px; z-index: 3; transition: opacity 0.2s; }
+.cz-env .seal.lock { background: var(--hi); }
+.cz-env .seal.lock::before { content: ""; width: 9px; height: 7px; background: var(--hi-ink); border-radius: 2px; box-shadow: 0 -5px 0 -1.5px var(--hi), 0 -5px 0 0 var(--hi-ink); margin-top: 4px; }
+.cz-env.lift .flap { transform: perspective(600px) rotateX(180deg); opacity: 0.5; }
+.cz-env.lift .paper { transform: translateY(-34%); z-index: 1; }
+.cz-env.lift .seal { opacity: 0; }
+.cz-env.read .env { opacity: 0.72; }
+.cz-env .when { font-family: var(--df); font-weight: var(--dw); font-size: calc(clamp(1.35rem, 3.2vw, 1.9rem) * var(--ds)); line-height: 1.05; text-wrap: balance; }
+.cz.caps .cz-env .when { text-transform: uppercase; }
+.cz-read { position: fixed; inset: 0; z-index: 60; background: var(--bg); color: var(--ink); overflow-y: auto; animation: cz-in 0.35s ease both; }
+@keyframes cz-in { from { opacity: 0; } to { opacity: 1; } }
+.cz-read .bar { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; font: 400 0.8rem var(--mono); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); }
+.cz-read .bar button { border: 1px solid var(--ink); border-radius: 999px; padding: 8px 16px; background: transparent; cursor: pointer; font: 400 0.8rem var(--mono); }
+.cz-read .lsheet { max-width: 1080px; margin: 0 auto; padding: 8px 20px 64px; display: grid; gap: 26px; animation: cz-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.cz-read .lsheet > img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--r); max-height: 76svh; }
+.cz-read h2 { font-size: calc(clamp(2.8rem, 9vw, 5.4rem) * var(--ds)); line-height: 0.96; margin: 6px 0 22px; text-wrap: balance; }
+.cz-read .words p { font-size: clamp(1.15rem, 2.4vw, 1.3rem); line-height: 1.65; margin: 0 0 1em; text-wrap: pretty; }
+.cz-read .words .cz-lab { font-size: 0.74rem; margin: 0; }
+.cz-read .words .name { font-size: calc(2rem * var(--ds)); margin-top: 0.4em; }
+.cz-read .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.cz-read .cz-btn.dark { background: var(--ink); color: var(--bg); }
+@media (min-width: 901px) { .cz-read .lsheet { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 48px; align-items: start; padding-top: 24px; } .cz-read .lsheet > img { position: sticky; top: 76px; } .cz-read .lsheet:not(:has(> img)) { grid-template-columns: minmax(0, 720px); justify-content: center; } }

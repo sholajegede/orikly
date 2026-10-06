@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { unstable_cache } from "next/cache";
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "@convex/_generated/api";
+import { getSite } from "@/lib/site-data";
 import { SiteView, type SiteData } from "@/components/SiteView";
 
 export const revalidate = 30;
@@ -11,16 +9,6 @@ export async function generateStaticParams() {
 }
 
 type Props = { params: Promise<{ slug: string }> };
-
-// One backend read per site every 30 seconds, however many guests open the link.
-const getSite = unstable_cache(
-  async (slug: string): Promise<SiteData | null> => {
-    const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL as string);
-    return await client.query(api.projects.publicBySlug, { slug });
-  },
-  ["public-site"],
-  { revalidate: 30 },
-);
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;

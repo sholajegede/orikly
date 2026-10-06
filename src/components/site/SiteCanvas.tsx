@@ -36,6 +36,8 @@ type Props = {
   onTrack?: (name: string, props?: Record<string, string | number | boolean>) => void;
   onWish?: (name: string, message: string, trap: string) => Promise<void>;
   onShare?: () => void;
+  /** Set when the celebration has "Open when…" letters to link to. */
+  letters?: { href: string; count: number };
 };
 
 const TITLES: Record<DesignSection["type"], string> = { wall: "The wall.", moment: "Make a wish.", letter: "The letter.", details: "The day.", films: "The film.", gift: "Send a gift.", wishes: "Leave a wish." };
@@ -131,7 +133,7 @@ function Clip({ url }: { url: string }) {
   );
 }
 
-export function SiteCanvas({ data, eager, banner, onTrack, onWish, onShare }: Props) {
+export function SiteCanvas({ data, eager, banner, onTrack, onWish, onShare, letters }: Props) {
   const { design: d, site, live } = data;
   const track = onTrack ?? (() => {});
   const [box, setBox] = useState<number | null>(null);
@@ -371,6 +373,17 @@ export function SiteCanvas({ data, eager, banner, onTrack, onWish, onShare }: Pr
       ) : null}
 
       {shown.map(section)}
+
+      {letters && letters.count > 0 ? (
+        <div className="cz-wrap">
+          <a className="cz-open rv" href={letters.href} onClick={() => track("letters_click")}>
+            <p className="cz-lab">One more thing</p>
+            <h2>Open when…</h2>
+            <p>{letters.count} letters for the days ahead. Open the one you need.</p>
+            <span className="cz-btn">Open the letters</span>
+          </a>
+        </div>
+      ) : null}
 
       {live && onShare ? <div className="cz-wrap"><div className="cz-share rv"><p>Send this to someone who should see it.</p><button className="cz-btn" onClick={onShare}>Share on WhatsApp</button></div></div> : null}
       <footer className="cz-foot">Made with <a href={`${process.env.NEXT_PUBLIC_SITE_URL ?? "/"}?ref=site-${site.slug}`} onClick={() => track("footer_click")}>Orikly</a>. Make yours.</footer>

@@ -11,13 +11,14 @@ export const metadata: Metadata = { title: "Pricing", description: `Pay for what
 const rows = [
   { what: "A designed website", note: "An art director designs it around your photos and words, then checks its own work twice.", credits: COST.site },
   { what: "A film", note: "Tall for WhatsApp status or wide for a big screen, cut to your song. Most people take both.", credits: COST.film },
+  { what: "Open when… letters", note: "Letters for the days ahead, each sealed in its own envelope, on their own page with their own film.", credits: COST.letters },
   { what: "A whole new design", note: "Not feeling it? The studio starts again, and makes your films again to match.", credits: COST.redesign },
   { what: "Your films made again", note: "After you change the website by hand. For each film.", credits: COST.refilm },
   { what: "Editing by hand", note: "Colors, lettering, words, the order of the page. As often as you like.", credits: 0 },
 ];
 const faqs = [
   { q: "What is a credit?", a: "Credits are how you pay for what the studio makes. You buy them once, they sit in your account, and you spend them when you publish a website, make a film or ask for a new design." },
-  { q: `What does ${PRICE_LABEL} get me?`, a: `${STARTER_CREDITS} credits. A website and both films use ${FULL_CREDITS}. You keep ${STARTER_CREDITS - FULL_CREDITS} for a new design, or put them toward the next birthday.` },
+  { q: `What does ${PRICE_LABEL} get me?`, a: `${STARTER_CREDITS} credits. A website and both films use ${FULL_CREDITS}. You keep ${STARTER_CREDITS - FULL_CREDITS}: enough for a set of Open when… letters or a new design, or put them toward the next birthday.` },
   { q: "Do credits expire?", a: "No. Whatever you do not use stays in your account for the next celebration." },
   { q: "Can I buy only the website?", a: `Yes. A website on its own is ${COST.site} credits. You can add the films later.` },
   { q: "What if the studio fails?", a: "Your credits for that run go straight back to your account, by themselves." },
