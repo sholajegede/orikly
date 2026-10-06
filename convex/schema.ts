@@ -84,7 +84,7 @@ export default defineSchema({
   payments: defineTable({
     projectId: v.id("projects"),
     ownerId: v.id("users"),
-    method: v.union(v.literal("transfer"), v.literal("paystack"), v.literal("credit")),
+    method: v.union(v.literal("transfer"), v.literal("bachs"), v.literal("credit")),
     amountKobo: v.number(),
     status: v.union(v.literal("claimed"), v.literal("confirmed"), v.literal("failed"), v.literal("refunded")),
     reference: v.optional(v.string()),
@@ -214,4 +214,23 @@ export default defineSchema({
   })
     .index("by_status", ["status", "createdAt"])
     .index("by_user", ["userId", "createdAt"]),
+
+  // One row per online payment attempt. The webhook finds it by our reference.
+  checkouts: defineTable({
+    reference: v.string(),
+    kind: v.union(v.literal("project"), v.literal("pack")),
+    userId: v.id("users"),
+    projectId: v.optional(v.id("projects")),
+    packId: v.optional(v.string()),
+    amountKobo: v.number(),
+    status: v.union(v.literal("open"), v.literal("paid")),
+    checkoutId: v.optional(v.string()),
+    createdAt: v.number(),
+    paidAt: v.optional(v.number()),
+  })
+    .index("by_reference", ["reference"])
+    .index("by_user", ["userId", "createdAt"]),
+
+  // Webhook event ids we already handled. Delivery is at least once.
+  webhookEvents: defineTable({ eventId: v.string(), type: v.string(), at: v.number() }).index("by_event", ["eventId"]),
 });
