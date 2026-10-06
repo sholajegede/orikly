@@ -934,9 +934,11 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .cz-down > div { flex: 1; border: 1px dotted currentColor; border-radius: 14px; padding: 10px 6px; text-align: center; }
 .cz-down b { display: block; font-family: var(--df); font-weight: var(--dw); font-size: calc(2.2rem * var(--ds)); line-height: 1; }
 .cz-down span { font: 500 0.62rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
-.cz-films { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; padding-block: 32px 68px; align-items: start; }
-.cz-films video { width: 100%; border-radius: var(--rt); background: #000; max-height: 82svh; }
-.cz-films video.landscape { grid-column: 1 / -1; }
+.cz-films { display: flex; flex-wrap: wrap; gap: 14px; padding-block: 32px 68px; align-items: stretch; justify-content: center; }
+.cz-films video { border-radius: var(--rt); background: var(--ink); object-fit: cover; height: min(70svh, 560px); max-width: 100%; }
+.cz-films video.portrait { aspect-ratio: 9 / 16; }
+.cz-films video.landscape { aspect-ratio: 16 / 9; }
+@media (max-width: 900px) { .cz-films video { height: auto; width: 100%; } .cz-films video.portrait { max-width: 320px; } }
 .cz-wishes { display: grid; gap: 14px; max-width: 720px; margin-inline: auto; padding-block: 32px 68px; }
 .cz-wishes .cz-q { min-height: 0; }
 .cz-wishes label { display: grid; gap: 6px; }

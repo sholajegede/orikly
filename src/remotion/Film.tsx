@@ -193,7 +193,7 @@ function Quote({ k, g, s, f, style }: { k: Kit; g: Ground; s: Scene; f: number; 
   const text = s.text ?? "";
   return (
     <div style={{ background: g.card, color: g.fg, borderRadius: k.r, padding: 3.6 * k.u, display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 2 * k.u, ...style }}>
-      <div style={{ ...k.display(fit(text, [[24, 13], [44, 11], [70, 9]], 7.4) * k.u), lineHeight: 1.0, ...rise(f, 6) }}>{text}</div>
+      <div style={{ ...k.display(fit(text, [[24, 13], [44, 11], [70, 9]], 7.4) * k.u * (k.tall ? 1.22 : 1)), lineHeight: 1.0, ...rise(f, 6) }}>{text}</div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: k.u, ...rise(f, 18) }}>
         <span style={{ ...k.mono(), color: g.soft }}>{s.meta ?? ""}</span>
         {s.chip ? <Chip k={k} text={s.chip} /> : null}
@@ -239,7 +239,7 @@ function LineScene({ k, s, flip }: { k: Kit; s: Scene; flip: boolean }) {
   const words = (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 2.4 * k.u, minWidth: 0 }}>
       {s.meta ? <div style={{ ...k.mono(), color: g.soft, ...rise(f, 4) }}>{s.meta}</div> : null}
-      <div style={{ ...k.display(fit(text, [[22, 14], [40, 11.6], [64, 9.6]], 8) * k.u), lineHeight: 1.0, ...rise(f, 8) }}>{text}</div>
+      <div style={{ ...k.display(fit(text, [[22, 14], [40, 11.6], [64, 9.6]], 8) * k.u * (k.tall ? 1.2 : 1)), lineHeight: 1.0, ...rise(f, 8) }}>{text}</div>
       {s.chip ? <div style={rise(f, 20)}><Chip k={k} text={s.chip} /></div> : null}
     </div>
   );

@@ -274,7 +274,7 @@ export function SiteCanvas({ data, eager, banner, onTrack, onWish, onShare }: Pr
         return (
           <section key={i} className="cz-wrap">
             {head(s)}
-            <div className="cz-films rv">{data.films.map((f, k) => <video key={f.url} className={f.format} src={f.url} controls playsInline preload="none" onPlay={() => track("video_play", { n: k })} />)}</div>
+            <div className="cz-films rv">{data.films.map((f, k) => <video key={f.url} className={f.format} src={f.url} controls playsInline preload="metadata" onPlay={() => track("video_play", { n: k })} />)}</div>
           </section>
         );
       case "gift":
