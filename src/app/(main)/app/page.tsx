@@ -103,7 +103,7 @@ export default function Dashboard() {
         </div>
 
         <section className="dash-block">
-          <div className="dash-head"><h2>Celebrations</h2><span className="muted small">{list.length} of 5</span></div>
+          <div className="dash-head"><h2>Celebrations</h2><span className="muted small">{list.length ? `${list.length} in all` : ""}</span></div>
           {projects === undefined ? (
             <p className="muted">Loading…</p>
           ) : list.length === 0 ? (

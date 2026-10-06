@@ -8,7 +8,8 @@ export const MAX_VIDEOS = 5;
 export const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
 export const MAX_SONG_BYTES = 15 * 1024 * 1024;
-export const MAX_PROJECTS_PER_USER = 5;
+// No limit on celebrations. Only unfinished drafts are capped, to stop someone filling the database for free.
+export const MAX_DRAFTS_PER_USER = 10;
 export const MAX_WISHES_PER_SITE = 200;
 
 export const OCCASIONS = [

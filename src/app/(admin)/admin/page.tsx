@@ -45,6 +45,8 @@ export default function AdminPage() {
 function AdminApp({ leave }: { leave: () => void }) {
   const [tab, setTab] = useState<Tab>("Today");
   const me = useQuery(api.users.me);
+  const [more, setMore] = useState(false);
+  const go = (t: Tab) => { setTab(t); setMore(false); window.scrollTo(0, 0); };
   const q = useQuery(api.ops.queues);
   const badge: Partial<Record<Tab, number>> = { Packs: q?.packs };
   const [customerId, setCustomerId] = useState<Id<"users"> | null>(null);
@@ -60,6 +62,19 @@ function AdminApp({ leave }: { leave: () => void }) {
         </nav>
         <div className="who"><span>{me?.email ?? ""}</span><button onClick={leave}>Sign out</button></div>
       </aside>
+      <nav className="admin-tabbar" aria-label="Admin">
+        {(["Today", "Projects", "Packs", "Updates"] as const).map((t, i) => (
+          <button key={t} className={tab === t ? "on" : ""} onClick={() => go(t)}><i className="ico" data-k={["home", "files", "credits", "help"][i]} />{badge[t] ? <b>{badge[t]}</b> : null}<span>{t}</span></button>
+        ))}
+        <button className={more || tab === "Customer" || tab === "Events" ? "on" : ""} onClick={() => setMore(!more)} aria-expanded={more}><i className="ico" data-k="more" /><span>More</span></button>
+      </nav>
+      {more ? (
+        <div className="more-sheet admin-more" role="dialog" aria-label="More">
+          <button onClick={() => go("Customer")}>Customer</button>
+          <button onClick={() => go("Events")}>Events</button>
+          <div className="who"><span>{me?.email ?? ""}</span><button onClick={leave}>Sign out</button></div>
+        </div>
+      ) : null}
       <main className="admin-main stack">
       <h1 className="display" style={{ fontSize: "clamp(36px, 6vw, 56px)", fontWeight: 400 }}>{tab}</h1>
       {tab === "Today" ? <Today /> : null}

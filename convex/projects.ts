@@ -6,7 +6,7 @@ import { currentUser, isAdminEmail, requireOwnedProject, requireUser } from "./l
 import { logEvent } from "./lib/events";
 import { lifetime } from "./lib/counters";
 import {
-  MAX_PROJECTS_PER_USER,
+  MAX_DRAFTS_PER_USER,
   PALETTES,
   PRICE_KOBO,
   SITE_STYLES,
@@ -67,7 +67,9 @@ export const create = mutation({
       .query("projects")
       .withIndex("by_owner", (q) => q.eq("ownerId", user._id))
       .collect();
-    if (mine.length >= MAX_PROJECTS_PER_USER) throw new ConvexError("You have reached the limit of 5 celebrations. Contact support.");
+    if (mine.filter((p) => p.status === "draft").length >= MAX_DRAFTS_PER_USER) {
+      throw new ConvexError("You have 10 unfinished drafts. Publish or delete one to start another.");
+    }
     if (args.eventDate && !/^\d{4}-\d{2}-\d{2}$/.test(args.eventDate)) throw new ConvexError("Use a valid date.");
 
     const now = Date.now();
