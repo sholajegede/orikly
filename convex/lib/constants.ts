@@ -1,7 +1,31 @@
 // Shared by the Convex backend and the Next.js frontend. Keep this file dependency-free.
 
-export const PRICE_KOBO = 2_000_000; // NGN 20,000
-export const PRICE_LABEL = "₦20,000";
+// Everything is bought with credits. One credit is about NGN 1,000, less when more are bought at once.
+/** What each thing costs, in credits. */
+export const COST = { site: 5, film: 2, redesign: 3, refilm: 1 } as const;
+/** A website and both films. */
+export const FULL_CREDITS = COST.site + COST.film * 2;
+/** The amounts of credits that can be bought. The starter covers one full celebration with 3 credits to spare. */
+export const CREDIT_STEPS = [3, 6, 12, 18, 24, 36, 48, 60, 90, 120, 180, 240] as const;
+export const STARTER_CREDITS = 12;
+const CREDIT_RATES = [
+  { from: 120, eachKobo: 70_000 },
+  { from: 60, eachKobo: 75_000 },
+  { from: 24, eachKobo: 80_000 },
+  { from: 12, eachKobo: 83_334 },
+  { from: 0, eachKobo: 100_000 },
+] as const;
+/** The price of a number of credits, rounded to the nearest NGN 50. */
+export function creditPriceKobo(credits: number): number {
+  const rate = CREDIT_RATES.find((r) => credits >= r.from) ?? CREDIT_RATES[CREDIT_RATES.length - 1];
+  return Math.round((credits * rate.eachKobo) / 5_000) * 5_000;
+}
+/** The smallest purchase that covers a shortfall. */
+export function creditStepFor(shortfall: number): number {
+  return CREDIT_STEPS.find((s) => s >= shortfall) ?? CREDIT_STEPS[CREDIT_STEPS.length - 1];
+}
+export const PRICE_KOBO = creditPriceKobo(STARTER_CREDITS); // NGN 10,000
+export const PRICE_LABEL = "₦10,000";
 
 export const MAX_PHOTOS = 30;
 export const MAX_VIDEOS = 5;
@@ -80,11 +104,5 @@ export const MIN_PAYOUT_KOBO = 500_000;
 export const JOB_CLAIM_HOURS = 48;
 export const CREATOR_MAX_ACTIVE = 2;
 export const MAX_DELIVERABLE_BYTES = 200 * 1024 * 1024;
-
-export const PACKS = [
-  { id: "pack5", credits: 5, priceKobo: 9_000_000, label: "Starter pack" },
-  { id: "pack10", credits: 10, priceKobo: 16_000_000, label: "Studio pack" },
-  { id: "pack25", credits: 25, priceKobo: 37_500_000, label: "Agency pack" },
-] as const;
 
 export const VIDEO_SLOTS = ["portrait", "landscape"] as const;

@@ -4,10 +4,10 @@ import { action, internalMutation, internalQuery, query } from "./_generated/ser
 import { internal } from "./_generated/api";
 import { logEvent } from "./lib/events";
 import { limit } from "./lib/limit";
-import { PACKS, PRICE_KOBO } from "./lib/constants";
+import { COST, CREDIT_STEPS, creditPriceKobo } from "./lib/constants";
+import { publishWithCredits } from "./packs";
 import { bump } from "./lib/counters";
 import { requireUser } from "./lib/auth";
-import { startStudio } from "./studio";
 
 const naira = (kobo: number) => (kobo / 100).toFixed(2);
 
@@ -21,27 +21,25 @@ export const config = query({
 });
 
 export const prepare = internalMutation({
-  args: { userId: v.id("users"), kind: v.union(v.literal("project"), v.literal("pack")), projectId: v.optional(v.id("projects")), packId: v.optional(v.string()) },
+  args: { userId: v.id("users"), kind: v.union(v.literal("project"), v.literal("credits")), credits: v.number(), projectId: v.optional(v.id("projects")), films: v.optional(v.boolean()) },
   handler: async (ctx, a) => {
     const user = await ctx.db.get(a.userId);
     if (!user?.email) throw new ConvexError("Add an email to your account first.");
     await limit(ctx, `checkout:${a.userId}`, 10, 3_600_000);
-    let amountKobo = 0;
+    if (!(CREDIT_STEPS as readonly number[]).includes(a.credits)) throw new ConvexError("Pick an amount of credits from the slider.");
     if (a.kind === "project") {
       const project = a.projectId ? await ctx.db.get(a.projectId) : null;
       if (!project || project.ownerId !== a.userId) throw new ConvexError("Celebration not found.");
-      if (project.status === "paid") throw new ConvexError("This celebration is already paid.");
+      if (project.status === "paid") throw new ConvexError("This celebration is already live.");
       if (project.status === "suspended") throw new ConvexError("This site is suspended. Contact support.");
       const assets = await ctx.db.query("assets").withIndex("by_project", (q) => q.eq("projectId", project._id)).take(40);
       if (assets.filter((x) => x.kind === "photo").length < 3) throw new ConvexError("Add at least 3 photos first.");
-      amountKobo = PRICE_KOBO;
-    } else {
-      const pack = PACKS.find((p) => p.id === a.packId);
-      if (!pack) throw new ConvexError("Pick a pack.");
-      amountKobo = pack.priceKobo;
+      const need = COST.site + (a.films ? COST.film * 2 : 0);
+      if ((user.credits ?? 0) + a.credits < need) throw new ConvexError("That is not enough credits for this celebration.");
     }
+    const amountKobo = creditPriceKobo(a.credits);
     const reference = `ok_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
-    await ctx.db.insert("checkouts", { reference, kind: a.kind, userId: a.userId, projectId: a.projectId, packId: a.packId, amountKobo, status: "open", createdAt: Date.now() });
+    await ctx.db.insert("checkouts", { reference, kind: a.kind, userId: a.userId, projectId: a.projectId, credits: a.credits, films: a.films, amountKobo, status: "open", createdAt: Date.now() });
     return { reference, amountKobo, email: user.email, name: user.name ?? undefined };
   },
 });
@@ -89,12 +87,13 @@ async function startCheckout(
 
 const siteUrl = () => (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
+/** Buy the credits a draft needs and publish it in one payment. */
 export const checkoutProject = action({
-  args: { projectId: v.id("projects") },
-  handler: async (ctx, { projectId }): Promise<string> => {
+  args: { projectId: v.id("projects"), credits: v.number(), films: v.boolean() },
+  handler: async (ctx, { projectId, credits, films }): Promise<string> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Please sign in.");
-    const prep = await ctx.runMutation(internal.bachs.prepare, { userId, kind: "project", projectId });
+    const prep = await ctx.runMutation(internal.bachs.prepare, { userId, kind: "project", projectId, credits, films });
     return await startCheckout(
       userId,
       prep,
@@ -105,17 +104,18 @@ export const checkoutProject = action({
   },
 });
 
-export const checkoutPack = action({
-  args: { packId: v.string() },
-  handler: async (ctx, { packId }): Promise<string> => {
+/** Buy credits on their own. */
+export const checkoutCredits = action({
+  args: { credits: v.number() },
+  handler: async (ctx, { credits }): Promise<string> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Please sign in.");
-    const prep = await ctx.runMutation(internal.bachs.prepare, { userId, kind: "pack", packId });
+    const prep = await ctx.runMutation(internal.bachs.prepare, { userId, kind: "credits", credits });
     return await startCheckout(
       userId,
       prep,
       { success: `${siteUrl()}/app/credits?paid=1`, cancel: `${siteUrl()}/app/credits` },
-      "pack",
+      "credits",
       (checkoutId) => ctx.runMutation(internal.bachs.attach, { reference: prep.reference, checkoutId }),
     );
   },
@@ -142,22 +142,19 @@ export const fulfil = internalMutation({
     const now = Date.now();
     await ctx.db.patch(row._id, { status: "paid", paidAt: now });
 
+    // Every payment buys credits. A payment made from a draft then spends them on that draft straight away.
+    const user = await ctx.db.get(row.userId);
+    const credits = row.credits ?? 0;
+    if (!user || credits <= 0) return "nothing_to_give";
+    await ctx.db.patch(user._id, { credits: (user.credits ?? 0) + credits });
+    await ctx.db.insert("packOrders", { userId: user._id, packId: `credits${credits}`, credits, amountKobo: paidKobo, status: "confirmed", senderName: "Paid online", reference: a.reference, createdAt: now, confirmedAt: now });
+    await logEvent(ctx, { name: "payment_confirmed", userId: user._id, projectId: row.projectId, props: { method: "bachs", credits } });
     if (row.kind === "project" && row.projectId) {
-      const project = await ctx.db.get(row.projectId);
-      if (!project) return "no_project";
-      if (project.status !== "paid") {
-        await ctx.db.patch(project._id, { status: project.status === "suspended" ? "suspended" : "paid", paidAt: project.paidAt ?? now, updatedAt: now });
-        await ctx.db.insert("payments", { projectId: project._id, ownerId: project.ownerId, method: "bachs", amountKobo: paidKobo, status: "confirmed", reference: a.reference, createdAt: now, confirmedAt: now });
-        await logEvent(ctx, { name: "payment_confirmed", userId: project.ownerId, projectId: project._id, props: { method: "bachs" } });
-        if (project.status !== "suspended") await startStudio(ctx, project._id);
-      }
-    } else if (row.kind === "pack" && row.packId) {
-      const pack = PACKS.find((p) => p.id === row.packId);
-      const user = await ctx.db.get(row.userId);
-      if (pack && user) {
-        await ctx.db.patch(user._id, { credits: (user.credits ?? 0) + pack.credits });
-        await ctx.db.insert("packOrders", { userId: user._id, packId: pack.id, credits: pack.credits, amountKobo: paidKobo, status: "confirmed", senderName: "Paid online", reference: a.reference, createdAt: now, confirmedAt: now });
-        await logEvent(ctx, { name: "pack_confirmed", userId: user._id, props: { pack: pack.id, method: "bachs" } });
+      try {
+        await publishWithCredits(ctx, user._id, row.projectId, row.films !== false);
+      } catch (e) {
+        // The credits are safe in the account. The customer can publish from the last step.
+        console.error("Paid, but could not publish", row.projectId, e);
       }
     }
     await bump(ctx, "payments_online");

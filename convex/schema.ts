@@ -56,7 +56,9 @@ export default defineSchema({
     slugChanges: v.optional(v.number()),
     videoPlan: v.optional(v.any()),
     siteDesign: v.optional(v.any()),
-    studio: v.optional(v.object({ stage: v.string(), runs: v.number(), at: v.number(), note: v.optional(v.string()) })),
+    // What the studio is doing for this celebration. `charged` credits go back to the customer if a run fails.
+    studio: v.optional(v.object({ stage: v.string(), runs: v.number(), at: v.number(), note: v.optional(v.string()), charged: v.optional(v.number()), design: v.optional(v.boolean()), films: v.optional(v.boolean()) })),
+    hasFilms: v.optional(v.boolean()),
     directedCount: v.optional(v.number()),
     siteStyle: v.string(),
     palette: v.string(),
@@ -172,10 +174,12 @@ export default defineSchema({
   // One row per online payment attempt. The webhook finds it by our reference.
   checkouts: defineTable({
     reference: v.string(),
-    kind: v.union(v.literal("project"), v.literal("pack")),
+    kind: v.union(v.literal("project"), v.literal("credits"), v.literal("pack")),
     userId: v.id("users"),
     projectId: v.optional(v.id("projects")),
     packId: v.optional(v.string()),
+    credits: v.optional(v.number()),
+    films: v.optional(v.boolean()),
     amountKobo: v.number(),
     status: v.union(v.literal("open"), v.literal("paid")),
     checkoutId: v.optional(v.string()),

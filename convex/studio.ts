@@ -6,6 +6,8 @@ import { internal } from "./_generated/api";
 import { requireOwnedProject, requireUser } from "./lib/auth";
 import { logEvent } from "./lib/events";
 import { limit } from "./lib/limit";
+import { COST } from "./lib/constants";
+import { spend } from "./packs";
 import { BODY_FONTS, DISPLAY_FONTS, HERO_LAYOUTS, RADII, SCENE_KINDS, SECTION_TYPES, TONES, tidyDesign, type SiteDesign } from "./lib/design";
 
 /**
@@ -15,7 +17,6 @@ import { BODY_FONTS, DISPLAY_FONTS, HERO_LAYOUTS, RADII, SCENE_KINDS, SECTION_TY
  * This file is the backend half: it starts the job, talks to the model, and stores what the job makes.
  */
 const MAX_PHOTOS = 30;
-const RUNS = 2;
 export const STAGES = ["queued", "designing", "reviewing", "filming", "done", "failed"] as const;
 const stage = v.union(...STAGES.map((s) => v.literal(s)));
 
@@ -27,43 +28,48 @@ export const available = query({
   },
 });
 
-/** Called the moment a celebration is paid for, whichever way it was paid. */
-export async function startStudio(ctx: MutationCtx, projectId: Id<"projects">) {
+type Run = { design: boolean; films: boolean; charged: number };
+
+/** Put a paid celebration in the studio queue. `charged` is what the customer paid for this run, in credits. */
+export async function startStudio(ctx: MutationCtx, projectId: Id<"projects">, run: Run) {
   const p = await ctx.db.get(projectId);
   if (!p || p.status !== "paid") return;
-  const runs = p.studio?.runs ?? 0;
-  if (runs >= RUNS || (p.studio && p.studio.stage !== "done" && p.studio.stage !== "failed")) return;
-  await ctx.db.patch(projectId, { studio: { stage: "queued", runs: runs + 1, at: Date.now() } });
-  await ctx.scheduler.runAfter(0, internal.studio.kick, { projectId });
+  if (p.studio && p.studio.stage !== "done" && p.studio.stage !== "failed") throw new ConvexError("The studio is already working on this.");
+  await ctx.db.patch(projectId, { studio: { stage: "queued", runs: (p.studio?.runs ?? 0) + 1, at: Date.now(), ...run } });
+  await ctx.scheduler.runAfter(0, internal.studio.kick, { projectId, design: run.design, films: run.films });
 }
 
-/** The customer's one free redo, or a retry after a failed run (a failed run is not counted). */
-export const redo = mutation({
-  args: { id: v.id("projects") },
-  handler: async (ctx, { id }) => {
+/**
+ * More work on a live celebration, paid for in credits:
+ *   redesign: a new design, and the films made again if the celebration has them,
+ *   films:    the two films, for the first time or again after the customer edited the website.
+ */
+export const run = mutation({
+  args: { id: v.id("projects"), what: v.union(v.literal("redesign"), v.literal("films")) },
+  handler: async (ctx, { id, what }) => {
     const { user, project } = await requireOwnedProject(ctx, id);
-    if (project.status !== "paid") throw new ConvexError("Your website and films are made after you pay.");
-    await limit(ctx, `studio:${user._id}`, 6, 3_600_000);
-    const s = project.studio;
-    if (s && s.stage !== "done" && s.stage !== "failed") throw new ConvexError("The studio is already working on this.");
-    const runs = s?.stage === "failed" ? Math.max(0, (s.runs ?? 1) - 1) : s?.runs ?? 0;
-    if (runs >= RUNS) throw new ConvexError("You have used your free redo. You can still edit the website by hand.");
-    await ctx.db.patch(id, { studio: { stage: "queued", runs: runs + 1, at: Date.now() } });
-    await ctx.scheduler.runAfter(0, internal.studio.kick, { projectId: id });
-    await logEvent(ctx, { name: "studio_redo", userId: user._id, projectId: id });
+    if (project.status !== "paid") throw new ConvexError("Publish this celebration first.");
+    await limit(ctx, `studio:${user._id}`, 8, 3_600_000);
+    const has = !!project.hasFilms || (project.deliverables ?? []).some((d) => d.label.startsWith("Your film"));
+    const cost = what === "redesign" ? COST.redesign : has ? COST.refilm * 2 : COST.film * 2;
+    const label = what === "redesign" ? "New design" : has ? "Films made again" : "Two films";
+    if (project.studio && project.studio.stage !== "done" && project.studio.stage !== "failed") throw new ConvexError("The studio is already working on this.");
+    await spend(ctx, user._id, id, cost, label);
+    await startStudio(ctx, id, { design: what === "redesign", films: what === "films" || has, charged: cost });
+    await logEvent(ctx, { name: "studio_run", userId: user._id, projectId: id, props: { what, credits: cost } });
   },
 });
 
 export const kick = internalAction({
-  args: { projectId: v.id("projects") },
-  handler: async (ctx, { projectId }) => {
+  args: { projectId: v.id("projects"), design: v.boolean(), films: v.boolean() },
+  handler: async (ctx, { projectId, design, films }) => {
     const key = process.env.TRIGGER_SECRET_KEY;
     const fail = (note: string) => ctx.runMutation(internal.studio.setStage, { projectId, stage: "failed", note });
     if (!key) return void (await fail("The studio is not switched on yet."));
     const res = await fetch("https://api.trigger.dev/api/v1/tasks/produce-celebration/trigger", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" },
-      body: JSON.stringify({ payload: { projectId } }),
+      body: JSON.stringify({ payload: { projectId, design, films } }),
     });
     if (!res.ok) {
       console.error("Could not start the studio job", res.status, await res.text());
@@ -76,8 +82,22 @@ export const setStage = internalMutation({
   args: { projectId: v.id("projects"), stage, note: v.optional(v.string()) },
   handler: async (ctx, a) => {
     const p = await ctx.db.get(a.projectId);
-    if (!p) return;
-    await ctx.db.patch(a.projectId, { studio: { stage: a.stage, runs: p.studio?.runs ?? 1, note: a.note?.slice(0, 200), at: Date.now() } });
+    if (!p?.studio) return;
+    const was = p.studio;
+    if (was.stage === "done" || was.stage === "failed") return;
+    let charged = was.charged ?? 0;
+    // A run that fails costs the customer nothing: the credits go straight back.
+    if (a.stage === "failed" && charged > 0) {
+      const owner = await ctx.db.get(p.ownerId);
+      if (owner) await ctx.db.patch(owner._id, { credits: (owner.credits ?? 0) + charged });
+      const now = Date.now();
+      await ctx.db.insert("payments", { projectId: a.projectId, ownerId: p.ownerId, method: "credit", amountKobo: 0, status: "refunded", note: `Studio stopped · ${charged} credits returned`, createdAt: now, confirmedAt: now });
+      charged = 0;
+    }
+    await ctx.db.patch(a.projectId, {
+      studio: { ...was, stage: a.stage, note: a.note?.slice(0, 200), at: Date.now(), charged },
+      ...(a.stage === "done" && was.films ? { hasFilms: true } : {}),
+    });
     if (a.stage === "done" || a.stage === "failed") await logEvent(ctx, { name: `studio_${a.stage}`, userId: p.ownerId, projectId: a.projectId, props: a.note ? { note: a.note.slice(0, 120) } : undefined });
   },
 });

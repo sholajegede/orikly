@@ -29,7 +29,7 @@ export const produce = task({
   id: "produce-celebration",
   maxDuration: 2400,
   retry: { maxAttempts: 1 },
-  run: async ({ projectId }: { projectId: string }) => {
+  run: async ({ projectId, design = true, films = true }: { projectId: string; design?: boolean; films?: boolean }) => {
     const site = process.env.CONVEX_SITE_URL ?? process.env.NEXT_PUBLIC_CONVEX_SITE_URL;
     const secret = process.env.STUDIO_SECRET;
     if (!site || !secret) throw new Error("Set STUDIO_SECRET and NEXT_PUBLIC_CONVEX_SITE_URL for the studio job.");
@@ -50,9 +50,11 @@ export const produce = task({
 
     const work = mkdtempSync(path.join(tmpdir(), "orikly-"));
     try {
-      await stage("designing");
-      const first = await call<{ notes: string }>("design");
-      logger.log("First design", { notes: first.notes });
+      if (design) {
+        await stage("designing");
+        const first = await call<{ notes: string }>("design");
+        logger.log("First design", { notes: first.notes });
+      }
 
       const root = projectRoot();
       const { bundle } = await import("@remotion/bundler");
@@ -65,7 +67,7 @@ export const produce = task({
       type Gathered = { design: unknown; site: Record<string, unknown>; photos: { id: string; url: string }[]; clips: { id: string; url: string }[]; songUrl: string | null };
       const canvas = (g: Gathered) => ({ design: g.design, live: true, site: g.site, photos: g.photos, clips: g.clips, films: [], wishes: [] });
 
-      for (let round = 1; round <= REVIEWS; round++) {
+      for (let round = 1; design && round <= REVIEWS; round++) {
         await stage("reviewing", `Look ${round} of ${REVIEWS}`);
         const g = await call<Gathered>("gather");
         const shots: string[] = [];
@@ -84,7 +86,7 @@ export const produce = task({
       const g = await call<Gathered & { site: { names: string; occasion: string; eventDate: string | null } }>("gather");
       const moment = ((g.design as { sections?: { type: string; title?: string; after?: string }[] }).sections ?? []).find((s) => s.type === "moment");
       const data = { design: g.design, names: g.site.names, occasion: g.site.occasion, eventDate: g.site.eventDate, momentTitle: moment?.title, momentAfter: moment?.after, photos: g.photos, clips: g.clips, songUrl: g.songUrl };
-      for (const [n, format] of (["portrait", "landscape"] as const).entries()) {
+      for (const [n, format] of (films ? (["portrait", "landscape"] as const) : []).entries()) {
         await stage("filming", `Film ${n + 1} of 2`);
         const inputProps = { data, format };
         const composition = await selectComposition({ serveUrl, id: "Film", inputProps });

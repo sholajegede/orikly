@@ -46,10 +46,10 @@ export const billing = query({
     const user = await currentUser(ctx);
     if (!user) return [];
     const projects = await ctx.db.query("projects").withIndex("by_owner", (q) => q.eq("ownerId", user._id)).collect();
-    const rows: { id: string; what: string; amountKobo: number; method: string; status: string; at: number }[] = [];
+    const rows: { id: string; what: string; amountKobo: number; method: string; status: string; at: number; note?: string }[] = [];
     for (const p of projects) {
       const pays = await ctx.db.query("payments").withIndex("by_project", (q) => q.eq("projectId", p._id)).take(20);
-      for (const x of pays) rows.push({ id: x._id, what: p.names, amountKobo: x.amountKobo, method: x.method, status: x.status, at: x.confirmedAt ?? x.createdAt });
+      for (const x of pays) rows.push({ id: x._id, what: p.names, amountKobo: x.amountKobo, method: x.method, status: x.status, at: x.confirmedAt ?? x.createdAt, note: x.note });
     }
     const packs = await ctx.db.query("packOrders").withIndex("by_user", (q) => q.eq("userId", user._id)).take(50);
     for (const o of packs) rows.push({ id: o._id, what: `${o.credits} credits`, amountKobo: o.amountKobo, method: "pack", status: o.status, at: o.confirmedAt ?? o.createdAt });
