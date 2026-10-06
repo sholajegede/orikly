@@ -80,11 +80,11 @@ export default function Dashboard() {
   return (
     <>
       <AppBar />
-      <main className="wrap dash">
+      <main className="page">
         <div className="dash-top">
           <div>
             <h1>{hello}{first ? <>, <em>{first}</em></> : null}</h1>
-            <p className="muted" style={{ margin: "6px 0 0" }}>{list.length ? "Here is where everything stands." : "Let us make your first celebration."}</p>
+            <p className="muted">{list.length ? "Here is where everything stands." : "Let us make your first celebration."}</p>
           </div>
         </div>
 

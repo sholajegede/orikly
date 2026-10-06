@@ -489,16 +489,16 @@ input:focus, textarea:focus, select:focus { border-color: var(--ink); box-shadow
 .tabbar .on { opacity: 1; background: rgba(255,255,255,0.1); }
 .tabbar .plus { opacity: 1; }
 .more-sheet { position: fixed; z-index: 29; left: 10px; right: 10px; bottom: calc(92px + env(safe-area-inset-bottom)); max-height: 70vh; overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 26px; padding: 14px; display: grid; gap: 16px; box-shadow: 0 30px 70px -20px rgba(31,15,8,0.6); animation: drop-up 0.3s var(--ease); }
-body:has(.tabbar) main { padding-bottom: 130px !important; }
+body:has(.tabbar) main { padding-bottom: 130px; }
 body:has(.tabbar) .savebar { bottom: calc(86px + env(safe-area-inset-bottom)); }
 @media (min-width: 960px) {
   body:has(.side) { padding-left: 272px; }
   .side { display: flex; flex-direction: column; gap: 18px; position: fixed; left: 0; top: 0; bottom: 0; width: 272px; padding: 20px 14px 16px; border-right: 1px solid var(--line); background: color-mix(in srgb, var(--card) 55%, var(--bg)); overflow-y: auto; --side-bg: var(--bg); }
-  .side .logo { padding: 2px 12px 4px; }
+  .side .logo { padding: 6px 12px 6px; }
   .side-new { width: 100%; }
   .side-foot { margin-top: auto; display: grid; gap: 14px; padding: 0 4px; }
   .appbar, .tabbar, .more-sheet { display: none; }
-  body:has(.tabbar) main { padding-bottom: 96px !important; }
+  body:has(.tabbar) main { padding-bottom: 96px; }
   body:has(.tabbar) .savebar { bottom: 0; }
 }
 .dash-top h1 em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var(--hot); letter-spacing: -0.02em; }
@@ -551,6 +551,7 @@ body:has(.tabbar) .savebar { bottom: calc(86px + env(safe-area-inset-bottom)); }
 .word-row:last-child { padding-bottom: 0; }
 .word-row p { margin: 4px 0 0; white-space: pre-wrap; }
 .set { display: grid; gap: 14px 40px; padding: 28px 0; border-top: 1px solid var(--line); }
+.set:first-of-type { border-top: 0; padding-top: 0; }
 @media (min-width: 760px) { .set { grid-template-columns: 220px 1fr; } }
 .set h2 { font-size: 20px; letter-spacing: -0.03em; }
 .set > div:first-child p { margin: 4px 0 0; }
@@ -561,15 +562,27 @@ body:has(.tabbar) .savebar { bottom: calc(86px + env(safe-area-inset-bottom)); }
 .sitebar .url b { font: 500 18px var(--display); letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sitebar .btn.ghost { color: var(--bg); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.3); }
 
+/* one page frame for every signed-in screen: same edges, same top, same heading */
+.page { width: 100%; max-width: 1120px; margin: 0 auto; padding: 28px 16px 96px; }
+@media (min-width: 960px) { .page { padding: 44px 48px 96px; } }
+.page.slim > * { max-width: 760px; }
+.page .dash-top { margin-bottom: 28px; align-items: flex-start; }
+.page .dash-top h1, .page-h { font: 500 clamp(30px, 4vw, 40px)/1.08 var(--display); letter-spacing: -0.035em; margin: 0 0 14px; }
+.page .dash-top h1 { margin: 0; }
+.page .dash-top p { margin: 8px 0 0; max-width: 40em; }
+.sect-h { font: 500 20px/1.2 var(--display); letter-spacing: -0.03em; margin: 28px 0 12px; }
+.page .dash-head h2, .page .set h2 { font-size: 20px; }
+.page .stack > .sect-h { margin-top: 28px; }
+
 /* dashboard */
-.dash { padding-top: 36px; padding-bottom: 96px; }
-.dash-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
-.dash-top h1 { font-size: clamp(34px, 5vw, 48px); font-weight: 500; letter-spacing: -0.035em; margin-top: 6px; }
+
+.dash-top { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
 .kpis { display: grid; grid-template-columns: repeat(2, 1fr); background: var(--card); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
 @media (min-width: 860px) { .kpis { grid-template-columns: repeat(4, 1fr); } }
 .kpis > div { padding: 20px 22px; display: grid; gap: 6px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 0 -1px -1px 0; }
 .kpis b { font: 500 clamp(32px, 4vw, 44px)/1 var(--display); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
-.dash-block { margin-top: 28px; }
+.dash-block { margin-top: 32px; }
 .dash-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
 .dash-head h2 { font-size: 22px; letter-spacing: -0.03em; }
 .rows { background: var(--card); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }

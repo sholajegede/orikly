@@ -42,10 +42,10 @@ export default function Builder() {
   const [step, setStep] = useState(0);
 
   if (data === undefined) {
-    return (<><AppBar /><main className="wrap" style={{ padding: 32 }}><p className="muted">Loading…</p></main></>);
+    return (<><AppBar /><main className="page"><p className="muted">Loading…</p></main></>);
   }
   if (data === null) {
-    return (<><AppBar /><main className="wrap" style={{ padding: 32 }}><p>We could not find this celebration.</p><Link className="btn" href="/app">Back</Link></main></>);
+    return (<><AppBar /><main className="page"><p>We could not find this celebration.</p><Link className="btn" href="/app">Back</Link></main></>);
   }
 
   const { project } = data;
@@ -54,14 +54,14 @@ export default function Builder() {
   return (
     <>
       <AppBar />
-      <main className="wrap narrow" style={{ padding: "32px 20px 40px" }}>
-        <div className="row between" style={{ marginBottom: 8 }}>
+      <main className="page slim">
+        <div className="row between" style={{ marginBottom: 12 }}>
           <Link href="/app" className="muted small">← My celebrations</Link>
           <span className={`chip ${live ? "ok" : project.status === "payment_claimed" ? "warn" : project.status === "suspended" ? "bad" : ""}`}>
             {live ? "Live" : project.status === "payment_claimed" ? "Confirming payment" : project.status === "suspended" ? "Suspended" : "Draft"}
           </span>
         </div>
-        <h1 className="display" style={{ fontSize: "clamp(40px, 8vw, 64px)", fontWeight: 400, margin: "6px 0 14px" }}>{project.names}</h1>
+        <h1 className="page-h">{project.names}</h1>
         <div className="progress" aria-hidden="true"><i style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} /></div>
 
         <SiteBar slug={project.slug} live={live} names={project.names} />

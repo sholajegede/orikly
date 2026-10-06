@@ -19,8 +19,8 @@ export default function Help() {
   return (
     <>
       <AppBar />
-      <main className="wrap dash" style={{ maxWidth: 820 }}>
-        <div className="dash-top"><div><h1>Help</h1><p className="muted" style={{ margin: "6px 0 0" }}>Quick answers. If yours is not here, write to us.</p></div></div>
+      <main className="page slim">
+        <div className="dash-top"><div><h1>Help</h1><p className="muted">Quick answers. If yours is not here, write to us.</p></div></div>
         <div className="faq">{faqs.map((f) => <details key={f.q}><summary>{f.q}</summary><p>{f.a}</p></details>)}</div>
         <div className="card" style={{ marginTop: 28 }}>
           <b style={{ fontSize: 20 }}>Talk to a person</b>

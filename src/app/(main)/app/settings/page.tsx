@@ -61,8 +61,8 @@ export default function Settings() {
   return (
     <>
       <AppBar />
-      <main className="wrap dash" style={{ maxWidth: 820 }}>
-        <div className="dash-top"><h1>Settings</h1></div>
+      <main className="page slim">
+        <div className="dash-top"><div><h1>Settings</h1><p className="muted">Your profile, your emails and your data.</p></div></div>
 
         <section className="set">
           <div><h2>Profile</h2><p className="muted small">How we greet you.</p></div>

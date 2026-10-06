@@ -29,11 +29,11 @@ export default function Files() {
   return (
     <>
       <AppBar />
-      <main className="wrap dash">
+      <main className="page">
         <div className="dash-top">
           <div>
             <h1>Files</h1>
-            <p className="muted" style={{ margin: "6px 0 0" }}>Everything you have uploaded and everything we made for you. Yours to download any time.</p>
+            <p className="muted">Everything you have uploaded and everything we made for you. Yours to download any time.</p>
           </div>
           {data ? <div className="chip">{data.count} file{data.count === 1 ? "" : "s"}, {mb(data.bytes)}</div> : null}
         </div>

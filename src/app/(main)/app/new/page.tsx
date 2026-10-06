@@ -44,8 +44,8 @@ export default function NewCelebration() {
   return (
     <>
       <AppBar />
-      <main className="wrap narrow" style={{ padding: "28px 16px 64px" }}>
-        <h1 className="display" style={{ fontSize: 44, marginBottom: 20 }}>New celebration</h1>
+      <main className="page slim">
+        <div className="dash-top"><div><h1>New celebration</h1><p className="muted">Three details to start. You can change them later.</p></div></div>
         <form className="card stack" onSubmit={submit}>
           <div>
             <div className="field"><span style={{ fontWeight: 600, fontSize: 14 }}>What are you celebrating?</span></div>

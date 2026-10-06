@@ -41,14 +41,14 @@ function Inner() {
   }
 
   return (
-    <main className="wrap dash" style={{ maxWidth: 820 }}>
+    <main className="page slim">
       <div className="stack">
         <div className="row between">
-          <h1 className="display" style={{ fontSize: "clamp(40px, 8vw, 64px)", fontWeight: 400 }}>Credits</h1>
+          <h1 className="page-h" style={{ margin: 0 }}>Credits</h1>
           <span className="chip gold">{mine?.credits ?? 0} left</span>
         </div>
         <p className="muted" style={{ margin: 0 }}>One credit publishes one celebration with its website and two videos. Open a celebration and choose "Use a credit" on the last step. Credits never expire.</p>
-        <h2 style={{ fontSize: 22, marginTop: 28 }}>Top up</h2>
+        <h2 className="sect-h">Top up</h2>
 
         <div className="grid">
           {PACKS.map((p) => (
@@ -114,7 +114,7 @@ export default function Credits() {
   return (
     <>
       <AppBar />
-      <Suspense fallback={<main className="wrap"><p className="muted">Loading…</p></main>}><Inner /></Suspense>
+      <Suspense fallback={<main className="page"><p className="muted">Loading…</p></main>}><Inner /></Suspense>
     </>
   );
 }
