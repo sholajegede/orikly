@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { Header } from "@/components/Header";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { cleanError, naira, shortDate } from "@/lib/format";
 import { uploadToStorage } from "@/lib/upload";
 
@@ -20,45 +20,54 @@ const STEP_LABELS: Record<string, string> = {
   payment_confirmed: "Payment confirmed",
 };
 
-const TABS = ["Today", "Projects", "Creators", "Reviews", "Payouts", "Packs", "Customer", "Events"] as const;
+const TABS = ["Today", "Projects", "Packs", "Customer", "Events"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function AdminPage() {
   const isAdmin = useQuery(api.admin.amIAdmin);
-  return (
-    <>
-      <Header />
-      <main className="wrap" style={{ padding: "24px 16px 80px" }}>
-        {isAdmin === undefined ? <p className="muted">Loading…</p> : !isAdmin ? <p className="err">You do not have access to this page.</p> : <AdminApp />}
+  const { signOut } = useAuthActions();
+  const leave = () => { void signOut().then(() => { window.location.href = "/login"; }); };
+  if (isAdmin === undefined) return <main className="admin-login"><p style={{ opacity: 0.7 }}>Loading…</p></main>;
+  if (!isAdmin) {
+    return (
+      <main className="admin-login">
+        <div className="box stack">
+          <h1>No access</h1>
+          <p style={{ margin: 0, opacity: 0.8 }}>This account is not on the admin list.</p>
+          <div><button className="btn hot" onClick={leave}>Sign out</button></div>
+        </div>
       </main>
-    </>
-  );
+    );
+  }
+  return <AdminApp leave={leave} />;
 }
 
-function AdminApp() {
+function AdminApp({ leave }: { leave: () => void }) {
   const [tab, setTab] = useState<Tab>("Today");
+  const me = useQuery(api.users.me);
   const q = useQuery(api.ops.queues);
-  const badge: Partial<Record<Tab, number>> = { Creators: q?.applications, Reviews: q?.reviews, Payouts: q?.payouts, Packs: q?.packs };
+  const badge: Partial<Record<Tab, number>> = { Packs: q?.packs };
   const [customerId, setCustomerId] = useState<Id<"users"> | null>(null);
 
   return (
-    <div className="stack">
-      <div className="row between">
-        <h1 className="display" style={{ fontSize: 40 }}>Admin</h1>
-        <div className="tabs">
+    <div className="admin-shell">
+      <aside className="admin-side">
+        <div className="logo"><i />Orikly <span>Admin</span></div>
+        <nav>
           {TABS.map((t) => (
-            <button key={t} className={`stepbtn ${tab === t ? "on" : ""}`} onClick={() => setTab(t)}>{t}{badge[t] ? ` (${badge[t]})` : ""}</button>
+            <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>{t}{badge[t] ? <b>{badge[t]}</b> : null}</button>
           ))}
-        </div>
-      </div>
+        </nav>
+        <div className="who"><span>{me?.email ?? ""}</span><button onClick={leave}>Sign out</button></div>
+      </aside>
+      <main className="admin-main stack">
+      <h1 className="display" style={{ fontSize: "clamp(36px, 6vw, 56px)", fontWeight: 400 }}>{tab}</h1>
       {tab === "Today" ? <Today /> : null}
       {tab === "Projects" ? <Projects openCustomer={(id) => { setCustomerId(id); setTab("Customer"); }} /> : null}
-      {tab === "Creators" ? <Creators /> : null}
-      {tab === "Reviews" ? <Reviews /> : null}
-      {tab === "Payouts" ? <Payouts /> : null}
       {tab === "Packs" ? <Packs /> : null}
       {tab === "Customer" ? <Customer userId={customerId} /> : null}
       {tab === "Events" ? <Events /> : null}
+      </main>
     </div>
   );
 }
@@ -158,7 +167,7 @@ function FragmentRow({ p, open, onToggle, openCustomer, onMarkPaid, onSuspend }:
         <td>
           <div className="row" style={{ gap: 6 }}>
             {p.status !== "paid" && p.status !== "suspended" ? <button className="btn small" onClick={onMarkPaid}>Mark paid</button> : null}
-            <Link className="btn ghost small" href={`/app/preview/${p.slug}`} target="_blank">Open</Link>
+            <Link className="btn ghost small" href={`/preview/${p.slug}`} target="_blank">Open</Link>
             <button className="btn ghost small" onClick={onToggle}>{open ? "Close" : "Manage"}</button>
             <button className="btn ghost small" onClick={onSuspend}>{p.status === "suspended" ? "Restore" : "Suspend"}</button>
           </div>
@@ -303,85 +312,6 @@ function useRun() {
   const [err, setErr] = useState<string | null>(null);
   const run = async (fn: () => Promise<unknown>) => { setErr(null); try { await fn(); } catch (e) { setErr(cleanError(e)); } };
   return { err, run };
-}
-
-function Creators() {
-  const [status, setStatus] = useState("pending");
-  const rows = useQuery(api.ops.creators, { status });
-  const set = useMutation(api.ops.setCreatorStatus);
-  const { err, run } = useRun();
-  return (
-    <div className="stack">
-      <div className="row">
-        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ maxWidth: 220 }}>
-          <option value="pending">Applications</option><option value="approved">Approved</option><option value="suspended">Suspended</option><option value="rejected">Rejected</option>
-        </select>
-        {err ? <span className="err">{err}</span> : null}
-      </div>
-      {rows === undefined ? <p className="muted">Loading…</p> : rows.length === 0 ? <p className="muted">Nobody here.</p> : rows.map((c) => (
-        <div key={c._id} className="card stack" style={{ gap: 6 }}>
-          <div className="row between"><b>{c.displayName}</b><span className="muted small">{c.city} · {c.email}</span></div>
-          <div className="small">WhatsApp {c.whatsapp}{c.portfolioUrl ? <> · <a href={c.portfolioUrl} target="_blank" rel="noreferrer">work</a></> : null}</div>
-          <div className="small" style={{ whiteSpace: "pre-wrap" }}>{c.experience}</div>
-          <div className="small muted">{c.completed} videos · earned {naira(c.lifetimeKobo)} · balance {naira(c.balanceKobo)}</div>
-          <div className="row">
-            {c.status !== "approved" ? <button className="btn small" onClick={() => void run(() => set({ creatorId: c._id, status: "approved" }))}>Approve</button> : null}
-            {c.status === "pending" ? <button className="btn ghost small" onClick={() => void run(() => set({ creatorId: c._id, status: "rejected" }))}>Reject</button> : null}
-            {c.status === "approved" ? <button className="btn ghost small" onClick={() => void run(() => set({ creatorId: c._id, status: "suspended" }))}>Suspend</button> : null}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Reviews() {
-  const rows = useQuery(api.ops.reviews);
-  const approve = useMutation(api.ops.approveJob);
-  const changes = useMutation(api.ops.requestChanges);
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const { err, run } = useRun();
-  return (
-    <div className="stack">
-      {err ? <span className="err">{err}</span> : null}
-      {rows === undefined ? <p className="muted">Loading…</p> : rows.length === 0 ? <p className="muted">No videos waiting for review.</p> : rows.map((j) => (
-        <div key={j._id} className="card grid two">
-          <div>{j.videoUrl ? <video src={j.videoUrl} controls playsInline preload="metadata" style={{ width: "100%", maxHeight: 420, background: "#000", borderRadius: 12 }} /> : null}</div>
-          <div className="stack" style={{ gap: 8 }}>
-            <b>{j.names}</b>
-            <div className="small muted" style={{ textTransform: "capitalize" }}>{j.style} · {j.slot} · by {j.creatorName} · pays {naira(j.payoutKobo)}</div>
-            <div className="row"><button className="btn small" onClick={() => void run(() => approve({ jobId: j._id }))}>Approve and pay creator</button></div>
-            <textarea style={{ minHeight: 70 }} placeholder="What should change?" value={notes[j._id] ?? ""} onChange={(e) => setNotes({ ...notes, [j._id]: e.target.value })} />
-            <div><button className="btn ghost small" onClick={() => void run(() => changes({ jobId: j._id, note: notes[j._id] ?? "" }))}>Ask for changes</button></div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Payouts() {
-  const rows = useQuery(api.ops.payouts);
-  const paid = useMutation(api.ops.markPayoutPaid);
-  const reject = useMutation(api.ops.rejectPayout);
-  const [ref, setRef] = useState<Record<string, string>>({});
-  const { err, run } = useRun();
-  return (
-    <div className="stack">
-      {err ? <span className="err">{err}</span> : null}
-      {rows === undefined ? <p className="muted">Loading…</p> : rows.length === 0 ? <p className="muted">No payouts waiting.</p> : rows.map((p) => (
-        <div key={p._id} className="card stack" style={{ gap: 6 }}>
-          <div className="row between"><b>{p.creatorName}</b><b>{naira(p.amountKobo)}</b></div>
-          <div className="small mono">{p.bankName} · {p.accountNumber} · {p.accountName}</div>
-          <div className="row">
-            <input type="text" placeholder="Transfer reference (optional)" value={ref[p._id] ?? ""} onChange={(e) => setRef({ ...ref, [p._id]: e.target.value })} style={{ maxWidth: 260 }} />
-            <button className="btn small" onClick={() => void run(() => paid({ payoutId: p._id, reference: ref[p._id] || undefined }))}>I sent it</button>
-            <button className="btn ghost small" onClick={() => void run(() => reject({ payoutId: p._id }))}>Return to balance</button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 }
 
 function Packs() {

@@ -20,6 +20,12 @@ export const FUNNEL_STEPS = [
   "payment_confirmed",
 ] as const;
 
+/** Used by the admin sign-in page so that only staff emails are ever sent a code. */
+export const mayRequestCode = mutation({
+  args: { email: v.string() },
+  handler: async (_ctx, { email }) => isAdminEmail(email.trim().toLowerCase()),
+});
+
 export const amIAdmin = query({
   args: {},
   handler: async (ctx) => {
