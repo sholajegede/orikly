@@ -1,0 +1,14 @@
+node_modules
+.next
+.env.local
+.env*.local
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+
+# local build notes, never committed
+CLAUDE.md
+AGENTS.md
+HANDOFF.md
+BUILD_PLAN.md
+BUILD_LOG.md
