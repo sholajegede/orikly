@@ -57,10 +57,14 @@ function LoginForm() {
   }
 
   return (
-    <main className="wrap narrow" style={{ padding: "48px 16px" }}>
-      <Link href="/" className="logo">Orikly<i>.</i></Link>
-      <div className="card stack" style={{ marginTop: 28 }}>
-        <h1 className="display" style={{ fontSize: 40 }}>{step === "email" ? "Sign in" : "Enter your code"}</h1>
+    <main className="auth">
+      <aside className="auth-cloth" aria-hidden="true">
+        <p>Praise them <em>properly.</em></p>
+      </aside>
+      <div className="auth-form">
+      <Link href="/" className="logo"><i />Orikly</Link>
+      <div className="stack" style={{ marginTop: 40 }}>
+        <h1 className="display" style={{ fontSize: "clamp(40px, 6vw, 60px)", fontWeight: 400 }}>{step === "email" ? "Sign in" : "Enter your code"}</h1>
         {step === "email" ? (
           <form className="stack" onSubmit={sendCode}>
             <p className="muted" style={{ margin: 0 }}>Enter your email. We send you a 6-digit code. No password needed.</p>
@@ -83,6 +87,7 @@ function LoginForm() {
             <button type="button" className="btn ghost" onClick={() => { setStep("email"); setCode(""); setError(null); }}>Use a different email</button>
           </form>
         )}
+      </div>
       </div>
     </main>
   );

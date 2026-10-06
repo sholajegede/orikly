@@ -44,7 +44,7 @@ function Inner() {
     <main className="wrap narrow" style={{ padding: "28px 16px 64px" }}>
       <div className="stack">
         <div className="row between">
-          <h1 className="display" style={{ fontSize: 40 }}>Credits</h1>
+          <h1 className="display" style={{ fontSize: "clamp(40px, 8vw, 64px)", fontWeight: 400 }}>Credits</h1>
           <span className="chip gold">{mine?.credits ?? 0} left</span>
         </div>
         <p className="muted" style={{ margin: 0 }}>One credit publishes one celebration with its website and two videos. Open a celebration and choose "Use a credit" on the last step.</p>

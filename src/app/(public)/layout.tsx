@@ -6,7 +6,7 @@ import "../globals.css";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = { metadataBase: new URL(siteUrl), title: { default: "Celebration", template: "%s | Orikly" } };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#14163b" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#f3eee4" };
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
@@ -16,7 +16,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=DM+Sans:wght@400;500;600;800&family=Figtree:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Anton&family=Bricolage+Grotesque:opsz,wght@12..96,300..700&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;800&family=Instrument+Serif:ital@0;1&display=swap"
         />
       </head>
       <body>

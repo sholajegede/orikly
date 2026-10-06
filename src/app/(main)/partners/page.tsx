@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Header } from "@/components/Header";
+import { SiteFooter } from "@/components/SiteFooter";
 import { Tracker } from "@/components/Tracker";
 import { PACKS, PRICE_KOBO } from "@convex/lib/constants";
 import { naira } from "@/lib/format";
@@ -11,12 +12,12 @@ export default function Partners() {
   return (
     <>
       <Tracker name="packs_view" />
-      <Header dark />
+      <Header />
       <main>
         <section className="page-hero">
           <div className="wrap">
-            <h1>More clients. Lower price each.</h1>
-            <p>Event planners, photographers and videographers buy celebrations in a pack. Every credit gives one client a website and two videos.</p>
+            <h1>Make them for your clients.</h1>
+            <p>Planners, photographers, MCs and anyone with a good eye: buy celebrations in a pack, make them for your clients, and charge what you like. Every credit gives one client a website and two videos.</p>
             <Link href="/app/credits" className="btn gold">Buy a pack</Link>
           </div>
         </section>
@@ -38,10 +39,11 @@ export default function Partners() {
                 );
               })}
             </div>
-            <p className="muted" style={{ marginTop: 24, maxWidth: 560 }}>You pay once by bank transfer. We confirm it and add the credits to your account. Build each client's celebration yourself, then use a credit to publish it. Credits do not expire.</p>
+            <p className="muted" style={{ marginTop: 24, maxWidth: 560 }}>You pay once, by card or bank transfer. The credits are added to your account when the payment is confirmed. Build each client's celebration yourself, then use a credit to publish it. Credits do not expire.</p>
           </div>
         </section>
       </main>
+      <SiteFooter />
     </>
   );
 }

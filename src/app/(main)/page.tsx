@@ -1,140 +1,257 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { Header } from "@/components/Header";
 import { Tracker } from "@/components/Tracker";
+import { PhoneSite } from "@/components/PhoneSite";
 import { StyleShowcase } from "@/components/StyleShowcase";
+import { SiteFooter } from "@/components/SiteFooter";
+import { WallGrid } from "@/components/WallGrid";
+import { getWall } from "@/lib/wall";
+import { textileSize, textileUrl, type Textile } from "@/lib/textile";
 import { PRICE_LABEL } from "@convex/lib/constants";
 
 const wa = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP;
 
-const steps = [
-  { t: "Sign in with your email", d: "No password. We send you a code." },
-  { t: "Add your photos and words", d: "Up to 30 photos and 5 videos, straight from your phone. We shrink them so they use little data." },
-  { t: "Pick a style and colors", d: "Choose how your website and your two videos look." },
-  { t: "See it, then pay", d: "Preview your website first. Pay by card or bank transfer, then share your link." },
+const cloth = (kind: Textile, thread: string, ground: string, scale = 1): CSSProperties => ({
+  backgroundImage: textileUrl(kind, thread, ground, scale),
+  backgroundSize: textileSize(kind, scale),
+});
+const place = (d: number, r: string) => ({ "--d": d, "--r": r }) as CSSProperties;
+
+const facts = [
+  { n: "10", u: "minutes", d: "From your first photo to a link in the family group chat." },
+  { n: "2", u: "videos", d: "Tall and wide. Directed by AI from your own photos, after you pay." },
+  { n: PRICE_LABEL, u: "once", d: "No monthly fee. Build it free. Pay when it sweets you." },
+  { n: "0", u: "apps", d: "Nothing to download. It opens in the browser on any phone." },
+];
+
+const minutes = [
+  { at: "0:00", t: "Sign in", d: "Type your email, enter the code. No password." },
+  { at: "1:00", t: "Add photos", d: "Up to 30, straight from your gallery. We shrink them so they do not finish your data." },
+  { at: "5:00", t: "Say something", d: "Your names, your story, the hall and the colors of the day." },
+  { at: "8:00", t: "See it", d: "You see your whole website before you pay one naira." },
+  { at: "10:00", t: "Share it", d: "Pay once. Drop the link in the family group chat." },
+];
+
+const extras = [
+  { t: "Colors of the day", d: "Aso-ebi colors and dress code in one place. Nobody comes in the wrong lace.", blocks: [["#1f7a55", "0"], ["#e9b13c", "50% 50% 0 0"]] },
+  { t: "Venue, time, map", d: "One tap opens the venue in Google Maps. No more \"where is the hall?\"", blocks: [["#2b2fa8", "50% 50% 50% 0"], ["#e4572e", "0"]] },
+  { t: "Gifts, one tap", d: "For the people who cannot come and spray you in person. They copy your account number, no mistakes.", blocks: [["#e9b13c", "0 100% 0 0"], ["#b3123f", "50%"]] },
+  { t: "Light on data", d: "It opens fast, even when the network is misbehaving.", blocks: [["#e4572e", "100% 0 0 0"], ["#2b2fa8", "0"]] },
 ];
 
 const faqs = [
-  { q: "How long do the videos take?", a: "Your website is live as soon as we confirm your payment. Your two videos are made by hand and sent to your dashboard, usually within 24 hours." },
-  { q: "How do I pay?", a: "By card or bank transfer on a secure payment page. Your website goes live as soon as the payment is confirmed, usually within a minute." },
-  { q: "Can I use my own song?", a: "Yes. Upload it and we put it in your two videos. It stays private to your downloadable videos and does not play on the public website." },
-  { q: "Can I change things after I pay?", a: "Yes. You can change your photos, words and colors any time from your dashboard." },
-  { q: "Can I use my own domain?", a: "Not yet. Every website gets a link like yourname.orikly.ng. Your own domain is coming." },
-  { q: "Who can see my website?", a: "Only people you send the link to. We tell search engines not to list it." },
+  { q: "How fast is it, really?", a: "Most people finish in about ten minutes. Your website is live the moment your payment is confirmed. Your two videos are ready a few minutes after that." },
+  { q: "Do I pay before I see anything?", a: "No. You build and see your whole website first. Your two videos are directed after you pay, because each one uses real AI time." },
+  { q: "Who makes the videos?", a: "An AI director does. It looks at every photo and reads your words, then chooses the order, finds each face, plans every camera move and writes the captions. Your phone plays that plan with your song and saves the video. No two come out the same." },
+  { q: "How do I pay?", a: "By card or bank transfer on a secure payment page. It is ₦20,000, once." },
+  { q: "Can I use my own song?", a: "Yes. Upload it and it plays in your videos. It stays in your downloadable videos and does not play on the public website." },
+  { q: "Can I change things after I pay?", a: "Your website, yes: update the photos, words and colors when you need to. Your videos are directed once, and you get one free redo if you want a different cut." },
+  { q: "Who can see my website?", a: "Only people who have your link. We tell search engines not to list it, and we do not put advertising trackers on it." },
+  { q: "What if something goes wrong?", a: "If your website or your videos do not work and we cannot fix it within 48 hours, we refund you in full. The refund policy has the details." },
 ];
 
-export default function Landing() {
+export default async function Landing() {
+  const wall = await getWall(8);
   return (
     <>
       <Tracker name="landing_view" />
       <Header />
       <main>
-        <section className="hero-o">
-          <div className="wrap hero-grid">
-            <div>
-              <p className="occasions">Weddings, birthdays, anniversaries</p>
-              <h1 className="chant" aria-label="Praise them properly.">
-                <span className="ln" aria-hidden="true"><span style={{ "--i": 0 } as React.CSSProperties}>Praise them</span></span>
-                <span className="ln zobo" aria-hidden="true"><span style={{ "--i": 1 } as React.CSSProperties}>properly.</span></span>
-              </h1>
-              <p className="lead">A website and two videos for your celebration. Add your photos and words on your phone, pick a style, and share one link.</p>
-              <div className="row actions" style={{ gap: 22 }}>
-                <Link href="/login" className="btn">Start free</Link>
-                <div className="price-tag"><b>{PRICE_LABEL}</b><span>once. Website and 2 videos.</span></div>
-              </div>
-              <p className="small muted" style={{ marginTop: 14 }}>You see your preview before you pay.</p>
+        <section className="hero-x">
+          <div className="wrap">
+            <p className="tagline">Weddings, birthdays, anniversaries</p>
+            <h1>Praise them <em>properly.</em></h1>
+            <p className="lead">Your photos become a celebration website and two videos, sharp sharp. About ten minutes, from your phone. No designer. No wahala.</p>
+            <div className="row cta">
+              <Link href="/login" className="btn hot">Start free</Link>
+              <a href="#how" className="btn ghost">See how it works</a>
             </div>
-            <div className="cloth" role="img" aria-label="Adire cloth with a woven label reading Tolu and Bisi">
-              <div className="label">
-                <small>14 February</small>
-                <b>Tolu &amp; Bisi</b>
-                <span>tolu-and-bisi.orikly.ng</span>
+            <p className="fine">{PRICE_LABEL} once. Build your website free. Pay when it sweets you.</p>
+          </div>
+
+          <div className="objs" aria-hidden="true">
+            <div className="obj o-site" style={place(0, "-7deg")}>
+              <span className="cap">Website</span>
+              <div className="face">
+                <div className="cover" style={cloth("adire", "#e6e8ff", "#2b2fa8", 0.9)} />
+                <div className="txt"><b>Tolu &amp; Bisi</b><span>tolu-and-bisi.orikly.ng</span></div>
               </div>
+            </div>
+            <div className="obj o-video" style={place(1, "6deg")}>
+              <span className="cap">Video</span>
+              <div className="face"><div className="tx" style={cloth("asooke", "#e9b13c", "#7a3d0c", 0.8)} /><span className="play" /><span className="time">0:42</span></div>
+            </div>
+            <div className="obj o-tag" style={place(2, "-12deg")}><div><b>10 min</b><span>start to share</span></div></div>
+            <div className="obj o-wish" style={place(3, "4deg")}>
+              <span className="cap">Wishes</span>
+              <div className="face"><p>May your home overflow with joy.</p><b>Aunty Funmi</b></div>
             </div>
           </div>
         </section>
 
-        <section className="band">
-          <div className="wrap">
-            <h2>Make it look like you</h2>
-            <p className="kicker">Four styles and six color schemes. Tap to see how your website could look.</p>
-            <StyleShowcase />
+        <section className="wrap">
+          <div className="facts-x">
+            {facts.map((f) => (
+              <div key={f.u}><div className="n">{f.n}<span>{f.u}</span></div><p>{f.d}</p></div>
+            ))}
           </div>
         </section>
 
-        <section className="band alt">
+        <section className="bandx" id="how">
           <div className="wrap">
-            <h2>Ready in an evening</h2>
-            <ol className="steps-o" style={{ padding: 0, margin: "28px 0 0" }}>
-              {steps.map((s, i) => (
-                <li key={s.t}>
-                  <span className="n">{i + 1}</span>
-                  <div><h3>{s.t}</h3><p>{s.d}</p></div>
-                </li>
+            <div className="sect-head">
+              <h2>Ten minutes. Sharp sharp.</h2>
+              <Link href="/login" className="btn">Start free</Link>
+            </div>
+            <div className="cells five">
+              {minutes.map((m) => (
+                <div className="cell" key={m.at}>
+                  <span className="clock">{m.at}</span>
+                  <h3>{m.t}</h3>
+                  <p>{m.d}</p>
+                </div>
               ))}
-            </ol>
+            </div>
           </div>
         </section>
 
-        <section className="band">
-          <div className="wrap">
-            <div className="price-panel">
-              <div style={{ position: "relative", zIndex: 1 }}>
-                <div className="big">{PRICE_LABEL}</div>
-                <p style={{ color: "#c9cbe8", margin: "8px 0 22px" }}>Paid once. No monthly fee.</p>
-                <Link href="/login" className="btn gold">Start free</Link>
+        <section className="bandx indigo" id="what">
+          <div className="wrap feat">
+            <div>
+              <span className="num">01.</span>
+              <h2>A website with your name on it</h2>
+              <p>tolu-and-bisi.orikly.ng. Your photos, your story, a countdown to the day, the hall and the colors. One link for everybody, from Lagos to London.</p>
+              <Link href="/login" className="btn light">Claim your link</Link>
+            </div>
+            <div className="vis">
+              <PhoneSite look={{ a: "#e4572e", b: "#e9b13c", bg: "#f3eee4", ink: "#1f0f08", card: "#fffdf8", font: "'Instrument Serif', Georgia, serif", radius: "10px", textile: "ankara", cloth: "#e4572e", thread: "#f3d9b0" }} />
+            </div>
+          </div>
+        </section>
+
+        <section className="bandx">
+          <div className="wrap feat flip">
+            <div>
+              <span className="num">02.</span>
+              <h2>Two videos in two minutes</h2>
+              <p>One tall for WhatsApp status and Instagram. One wide for the hall screen. An AI director studies your photos, finds every face and cuts the film to your song.</p>
+              <Link href="/login" className="btn">Start free</Link>
+            </div>
+            <div className="vis">
+              <div className="duo">
+                <div className="v p"><div className="tx" style={cloth("kente", "#e9b13c", "#1f7a55", 0.7)} /><span className="lab">9:16</span></div>
+                <div className="v l"><div className="tx" style={cloth("adire", "#f3eee4", "#b3123f", 0.9)} /><span className="lab">16:9</span></div>
               </div>
-              <ul>
-                <li><span><b>Your own website.</b> A link like tolu-and-bisi.orikly.ng with your photos, videos, story and a wall for guest wishes.</span></li>
-                <li><span><b>Two videos.</b> Two styles, made for WhatsApp status and for the big screen. Yours to download.</span></li>
-                <li><span><b>Your account.</b> Come back any time to change things, download your videos and read the wishes.</span></li>
-              </ul>
             </div>
           </div>
         </section>
 
-        <section className="band alt">
+        <section className="bandx espresso">
+          <div className="wrap feat">
+            <div>
+              <span className="num">03.</span>
+              <h2>A wall of wishes you keep</h2>
+              <p>Aunties, uncles and friends drop their prayers and wishes on your website, from anywhere. You choose which ones show. Read them again on your first anniversary.</p>
+              <Link href="/login" className="btn hot">Start free</Link>
+            </div>
+            <div className="vis">
+              <div className="notes">
+                <div className="n"><p>May your home overflow with joy.</p><b>Aunty Funmi</b></div>
+                <div className="n"><p>Congratulations, my people. We go dance!</p><b>Kunle</b></div>
+                <div className="n"><p>God bless your new home.</p><b>Mummy Tolu</b></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="bandx">
           <div className="wrap">
-            <div className="join-grid">
-              <Link href="/creators" className="join earn">
-                <h3>Make videos, get paid</h3>
-                <p>Edit celebration videos from your phone or laptop. You earn ₦3,500 for every video we approve.</p>
-                <span className="go">See how it works</span>
-              </Link>
-              <Link href="/partners" className="join pack">
-                <h3>Planner or photographer?</h3>
-                <p>Buy celebrations in packs and pay as little as ₦15,000 each. Give every client their own website and videos.</p>
-                <span className="go">See the packs</span>
-              </Link>
+            <div className="sect-head"><h2>Made for owambe</h2></div>
+            <div className="cells">
+              {extras.map((s) => (
+                <div className="cell" key={s.t}>
+                  <div className="blocks">{s.blocks.map(([c, r], j) => <i key={j} style={{ background: c, borderRadius: r, height: j % 2 ? 56 : 28 }} />)}</div>
+                  <h3>{s.t}</h3>
+                  <p>{s.d}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        <section className="band">
+        {wall.length >= 3 ? (
+          <section className="bandx" style={{ paddingTop: 0 }}>
+            <div className="wrap">
+              <div className="sect-head"><h2>Fresh praise</h2><Link href="/wall" className="btn ghost">See the whole wall</Link></div>
+              <WallGrid items={wall.slice(0, 8)} />
+            </div>
+          </section>
+        ) : null}
+
+        <section className="bandx" style={{ paddingTop: 0 }}>
+          <div className="wrap">
+            <div className="panel">
+              <h2>Make it look like you</h2>
+              <p className="kicker">Four styles and six color schemes. Tap one and watch your website change.</p>
+              <StyleShowcase />
+            </div>
+          </div>
+        </section>
+
+        <section className="bandx hot">
+          <div className="wrap price-x">
+            <div>
+              <p className="tagline">One price. No story.</p>
+              <div className="amount display">{PRICE_LABEL}</div>
+            </div>
+            <div>
+              <ul>
+                <li><b>Your own website</b> with photos, story, countdown, venue and wishes</li>
+                <li><b>Two videos</b>, directed by AI, ready in minutes</li>
+                <li><b>Yours to keep.</b> Your link stays up and your videos are yours to download</li>
+                <li><b>Free to build.</b> Pay only when it sweets you</li>
+              </ul>
+              <Link href="/login" className="btn dark">Start free</Link>
+            </div>
+          </div>
+        </section>
+
+        <section className="bandx">
+          <div className="wrap doors">
+            <Link href="/wall" className="door a">
+              <span className="go">The wall of praise</span>
+              <div><h3>See what people made</h3><p>Celebrations shared by the people who made them. Yours can join, if you choose.</p></div>
+            </Link>
+            <Link href="/partners" className="door b">
+              <span className="go">For planners and photographers</span>
+              <div><h3>Make them for clients</h3><p>Buy in packs from ₦15,000 each. Charge your clients what you like and keep the difference.</p></div>
+            </Link>
+          </div>
+        </section>
+
+        <section className="bandx" style={{ paddingTop: 0 }}>
           <div className="wrap narrow">
-            <h2>Questions</h2>
-            <div className="faq" style={{ marginTop: 20 }}>
+            <h2 className="h-sect">Questions</h2>
+            <div className="faq" style={{ marginTop: 24 }}>
               {faqs.map((f) => (
                 <details key={f.q}><summary>{f.q}</summary><p>{f.a}</p></details>
               ))}
             </div>
-            <div style={{ marginTop: 28 }} className="row">
-              <Link href="/login" className="btn">Start free</Link>
-              {wa ? <a className="btn ghost" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer">Chat with us on WhatsApp</a> : null}
+            {wa ? <div style={{ marginTop: 28 }}><a className="btn ghost" href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer">Chat with us on WhatsApp</a></div> : null}
+          </div>
+        </section>
+
+        <section className="bandx indigo closer">
+          <div className="wrap">
+            <h2 className="big">The day is coming. <em>Be ready tonight.</em></h2>
+            <div className="row" style={{ justifyContent: "center", marginTop: 36 }}>
+              <Link href="/login" className="btn hot">Start free</Link>
             </div>
           </div>
         </section>
       </main>
-      <footer className="footer">
-        <div className="wrap">
-          <p style={{ maxWidth: 520, margin: "0 0 16px" }}>Oríkì is the Yoruba art of praise. We built Orikly to praise your people properly.</p>
-          <Link href="/creators">Earn with videos</Link>
-          <Link href="/partners">For planners</Link>
-          <Link href="/legal/terms">Terms</Link>
-          <Link href="/legal/privacy">Privacy</Link>
-          <Link href="/legal/refunds">Refunds</Link>
-          <span>© Orikly</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

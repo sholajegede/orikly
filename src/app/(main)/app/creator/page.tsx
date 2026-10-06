@@ -80,7 +80,7 @@ function Studio() {
     <div className="stack">
       <div className="row between">
         <div>
-          <h1 className="display" style={{ fontSize: 40 }}>Studio</h1>
+          <h1 className="display" style={{ fontSize: "clamp(40px, 8vw, 64px)", fontWeight: 400 }}>Studio</h1>
           <div className="muted small">{c.displayName} · {c.completed} videos approved</div>
         </div>
         <div className="card" style={{ padding: "10px 16px" }}><div className="muted small">Balance</div><b style={{ fontFamily: "var(--display)", fontSize: 28 }}>{naira(c.balanceKobo)}</b></div>

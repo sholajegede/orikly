@@ -5,14 +5,16 @@ import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Header } from "@/components/Header";
+import { textileSize, textileUrl } from "@/lib/textile";
 import { useTrack } from "@/lib/track";
 
-const statusLabel: Record<string, { text: string; cls: string }> = {
-  draft: { text: "Draft", cls: "" },
-  payment_claimed: { text: "Confirming payment", cls: "warn" },
-  paid: { text: "Live", cls: "ok" },
-  suspended: { text: "Suspended", cls: "bad" },
+const statusLabel: Record<string, { text: string; cls: string; next: string }> = {
+  draft: { text: "Draft", cls: "", next: "Keep building" },
+  payment_claimed: { text: "Confirming payment", cls: "warn", next: "See status" },
+  paid: { text: "Live", cls: "ok", next: "Open, share, download" },
+  suspended: { text: "Suspended", cls: "bad", next: "Contact support" },
 };
+const cloth = { backgroundImage: textileUrl("adire", "#5a5fd6", "#2b2fa8", 1.3), backgroundSize: textileSize("adire", 1.3) };
 
 export default function Dashboard() {
   const me = useQuery(api.users.me);
@@ -48,54 +50,65 @@ export default function Dashboard() {
     setTimeout(() => setSaved(false), 2000);
   }
 
+  const first = (me?.name ?? "").trim().split(" ")[0];
+  const credits = me?.credits ?? 0;
+
   return (
     <>
       <Header />
-      <main className="wrap" style={{ padding: "28px 16px 64px" }}>
-        <div className="row between" style={{ marginBottom: 20 }}>
-          <h1 className="display" style={{ fontSize: 44 }}>My celebrations</h1>
+      <main className="wrap app-main">
+        <div className="app-head">
+          <div>
+            <p className="tagline muted">{first ? `Welcome back, ${first}` : "Welcome"}</p>
+            <h1>Your <em>celebrations</em></h1>
+          </div>
           <div className="row">
-            <Link href="/app/credits" className="btn ghost">{(me?.credits ?? 0) > 0 ? `${me?.credits} credits` : "Buy credits"}</Link>
-            <Link href="/app/new" className="btn">New celebration</Link>
+            <Link href="/app/credits" className="btn ghost">{credits > 0 ? `${credits} credit${credits === 1 ? "" : "s"}` : "Buy a pack"}</Link>
+            <Link href="/app/new" className="btn hot">New celebration</Link>
           </div>
         </div>
 
         {projects === undefined ? (
           <p className="muted">Loading…</p>
         ) : projects.length === 0 ? (
-          <div className="card stack" style={{ textAlign: "center", padding: 40 }}>
-            <h2 className="display" style={{ fontSize: 32 }}>Start your first celebration</h2>
-            <p className="muted" style={{ margin: 0 }}>It takes about 10 minutes. You see a preview before you pay.</p>
-            <div><Link href="/app/new" className="btn">Create a celebration</Link></div>
+          <div className="empty">
+            <p className="tagline">About ten minutes</p>
+            <h2>Who are we celebrating?</h2>
+            <p>Add your photos and words, pick a look, and watch your website come together. You pay only when it sweets you.</p>
+            <Link href="/app/new" className="btn hot">Start a celebration</Link>
           </div>
         ) : (
-          <div className="grid three">
+          <div className="projs">
             {projects.map((p) => {
               const s = statusLabel[p.status] ?? statusLabel.draft;
               return (
-                <Link key={p._id} href={`/app/${p._id}`} className="card" style={{ textDecoration: "none", padding: 0, overflow: "hidden" }}>
-                  <div style={{ aspectRatio: "16/10", background: "var(--line)" }}>
-                    {p.coverUrl ? <img src={p.coverUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : null}
-                  </div>
-                  <div style={{ padding: 16 }}>
-                    <div className="row between">
-                      <b style={{ fontSize: 18 }}>{p.names}</b>
-                      <span className={`chip ${s.cls}`}>{s.text}</span>
-                    </div>
-                    <div className="muted small" style={{ marginTop: 4 }}>{p.occasion} · /{p.slug}</div>
+                <Link key={p._id} href={`/app/${p._id}`} className="proj">
+                  <div className="pic" style={p.coverUrl ? undefined : cloth}>{p.coverUrl ? <img src={p.coverUrl} alt="" /> : null}</div>
+                  <div className="meta">
+                    <div className="row between"><span className={`chip ${s.cls}`}>{s.text}</span><span className="muted small" style={{ textTransform: "capitalize" }}>{p.occasion}</span></div>
+                    <b>{p.names}</b>
+                    <span className="muted small">{s.next}</span>
                   </div>
                 </Link>
               );
             })}
+            <Link href="/app/new" className="proj new"><div><b>New celebration</b>A wedding, a birthday or an anniversary</div></Link>
           </div>
         )}
 
-        <div className="card stack" style={{ marginTop: 32, maxWidth: 560 }}>
-          <h2 style={{ fontSize: 20 }}>Your details</h2>
-          <p className="muted small" style={{ margin: 0 }}>Signed in as {me?.email ?? "…"}. Add your WhatsApp number so we can message you when your videos are ready.</p>
-          <label className="field"><span>Your name</span><input type="text" value={name} onChange={(e) => setName(e.target.value)} /></label>
-          <label className="field"><span>WhatsApp number</span><input type="tel" inputMode="tel" placeholder="0801 234 5678" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} /></label>
-          <div className="row"><button className="btn small" onClick={() => void saveProfile()}>Save</button>{saved ? <span className="okmsg">Saved</span> : null}</div>
+        <div className="panel-plain">
+          <div className="card stack">
+            <h2 style={{ fontSize: 26 }}>Your details</h2>
+            <p className="muted small" style={{ margin: 0 }}>Signed in as {me?.email ?? "…"}. Add your WhatsApp number so we can reach you about your videos.</p>
+            <label className="field"><span>Your name</span><input type="text" value={name} onChange={(e) => setName(e.target.value)} /></label>
+            <label className="field"><span>WhatsApp number</span><input type="tel" inputMode="tel" placeholder="0801 234 5678" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} /></label>
+            <div className="row"><button className="btn small" onClick={() => void saveProfile()}>Save</button>{saved ? <span className="okmsg">Saved</span> : null}</div>
+          </div>
+          <div className="card stack" style={{ background: "var(--gold)", borderColor: "transparent" }}>
+            <h2 style={{ fontSize: 26 }}>Planning for clients?</h2>
+            <p style={{ margin: 0 }}>Buy celebrations in a pack and pay as little as ₦15,000 each. One credit publishes one celebration.</p>
+            <div><Link href="/app/credits" className="btn">See the packs</Link></div>
+          </div>
         </div>
       </main>
     </>

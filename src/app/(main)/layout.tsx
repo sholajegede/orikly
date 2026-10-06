@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
+import { Consent } from "@/components/Consent";
 import "../globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#14163b",
+  themeColor: "#f3eee4",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -35,11 +36,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
           <link
             rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=DM+Mono&family=DM+Sans:wght@400;500;600;800&family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Figtree:wght@400;500;600;700&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Anton&family=Bricolage+Grotesque:opsz,wght@12..96,300..700&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;800&family=Instrument+Serif:ital@0;1&display=swap"
           />
         </head>
         <body>
           <ConvexClientProvider>{children}</ConvexClientProvider>
+          <Consent />
         </body>
       </html>
     </ConvexAuthNextjsServerProvider>

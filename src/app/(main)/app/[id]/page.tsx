@@ -37,14 +37,15 @@ export default function Builder() {
   return (
     <>
       <Header />
-      <main className="wrap narrow" style={{ padding: "20px 16px 40px" }}>
+      <main className="wrap narrow" style={{ padding: "32px 20px 40px" }}>
         <div className="row between" style={{ marginBottom: 8 }}>
           <Link href="/app" className="muted small">← My celebrations</Link>
           <span className={`chip ${live ? "ok" : project.status === "payment_claimed" ? "warn" : project.status === "suspended" ? "bad" : ""}`}>
             {live ? "Live" : project.status === "payment_claimed" ? "Confirming payment" : project.status === "suspended" ? "Suspended" : "Draft"}
           </span>
         </div>
-        <h1 className="display" style={{ fontSize: 40, marginBottom: 12 }}>{project.names}</h1>
+        <h1 className="display" style={{ fontSize: "clamp(40px, 8vw, 64px)", fontWeight: 400, margin: "6px 0 14px" }}>{project.names}</h1>
+        <div className="progress" aria-hidden="true"><i style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} /></div>
 
         <div className="steps" role="tablist">
           {STEPS.map((s, i) => (
