@@ -24,16 +24,12 @@ function CopyRow({ label, value }: { label: string; value: string }) {
 export function PayStep({ data }: { data: BuilderData }) {
   const { project, assets, wishes, deliverables } = data;
   const track = useTrack();
-  const bank = useQuery(api.payments.bankDetails);
-  const claim = useMutation(api.projects.claimTransfer);
   const me = useQuery(api.users.me);
   const cfg = useQuery(api.bachs.config);
   const checkout = useAction(api.bachs.checkoutProject);
   const useCredit = useMutation(api.packs.useCredit);
   const setWall = useMutation(api.projects.update);
   const setWish = useMutation(api.wishes.setStatus);
-  const [sender, setSender] = useState("");
-  const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,19 +52,6 @@ export function PayStep({ data }: { data: BuilderData }) {
   const url = siteUrl(project.slug);
   const previewHref = `/app/preview/${project.slug}`;
   const ready = photos >= 3;
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      await claim({ id: project._id, senderName: sender, reference: reference || undefined });
-    } catch (err) {
-      setError(cleanError(err));
-    } finally {
-      setBusy(false);
-    }
-  }
 
   const share = `Come and see our celebration page: ${url}`;
 
@@ -99,66 +82,19 @@ export function PayStep({ data }: { data: BuilderData }) {
       {project.status === "draft" && cfg?.online ? (
         <div className="card stack" style={{ gap: 10 }}>
           <div className="row between"><h3 style={{ fontSize: 22 }}>Pay {naira(PRICE_KOBO)}</h3><span className="chip">One time</span></div>
-          <p className="muted" style={{ margin: 0 }}>Pay by card or transfer. The moment your payment enters, this page updates by itself.</p>
+          <p className="muted" style={{ margin: 0 }}>Pay by card or bank transfer on a secure page. The moment your payment enters, your website goes live and this page updates by itself.</p>
           {error ? <div className="err">{error}</div> : null}
           <div>
             <button className="btn gold" disabled={busy || !ready} onClick={() => { setBusy(true); setError(null); track("checkout_started", { slug: project.slug, naira: PRICE_KOBO / 100 }); void checkout({ projectId: project._id }).then((url) => { window.location.href = url; }).catch((e) => { setError(cleanError(e)); setBusy(false); }); }}>{busy ? "Opening payment page…" : `Pay ${naira(PRICE_KOBO)}`}</button>
           </div>
           {!ready ? <div className="hint">Add at least 3 photos first.</div> : null}
-          {cfg.transfer ? <details><summary className="small muted" style={{ cursor: "pointer" }}>Pay by manual bank transfer instead</summary><div style={{ marginTop: 12 }}><div className="stack">
-          <div className="row between"><h3 style={{ fontSize: 22 }}>Pay {naira(PRICE_KOBO)}</h3><span className="chip">One time</span></div>
-          <p className="muted" style={{ margin: 0 }}>Pay by bank transfer. After you pay, tell us below and we confirm it, usually within a few hours between 8am and 10pm.</p>
-          {bank === undefined ? <p className="muted">Loading…</p> : bank === null ? (
-            <p className="err">Payment details are not set up yet. Please chat with us on WhatsApp.</p>
-          ) : (
-            <div className="stack" style={{ gap: 8 }}>
-              <CopyRow label="Bank" value={bank.bankName} />
-              <CopyRow label="Account number" value={bank.accountNumber} />
-              <CopyRow label="Account name" value={bank.accountName} />
-              <CopyRow label="Amount" value={naira(bank.amountKobo)} />
-              <div className="hint">Use "{project.slug}" as the transfer reference if your bank app allows it.</div>
-            </div>
-          )}
-          <form className="stack" onSubmit={submit}>
-            <label className="field"><span>Name on the account you paid from</span><input type="text" required value={sender} onChange={(e) => setSender(e.target.value)} /></label>
-            <label className="field"><span>Transfer reference (optional)</span><input type="text" value={reference} onChange={(e) => setReference(e.target.value)} /></label>
-            {error ? <div className="err">{error}</div> : null}
-            <button className="btn" disabled={busy || !ready || !sender.trim()}>{busy ? "Sending…" : "I have paid"}</button>
-            {!ready ? <div className="hint">Add at least 3 photos first.</div> : null}
-          </form>
-        </div></div></details> : null}
         </div>
       ) : null}
 
       {project.status === "draft" && cfg && !cfg.online ? (
-        <div className="card stack">
-          <div className="row between"><h3 style={{ fontSize: 22 }}>Pay {naira(PRICE_KOBO)}</h3><span className="chip">One time</span></div>
-          <p className="muted" style={{ margin: 0 }}>Pay by bank transfer. After you pay, tell us below and we confirm it, usually within a few hours between 8am and 10pm.</p>
-          {bank === undefined ? <p className="muted">Loading…</p> : bank === null ? (
-            <p className="err">Payment details are not set up yet. Please chat with us on WhatsApp.</p>
-          ) : (
-            <div className="stack" style={{ gap: 8 }}>
-              <CopyRow label="Bank" value={bank.bankName} />
-              <CopyRow label="Account number" value={bank.accountNumber} />
-              <CopyRow label="Account name" value={bank.accountName} />
-              <CopyRow label="Amount" value={naira(bank.amountKobo)} />
-              <div className="hint">Use "{project.slug}" as the transfer reference if your bank app allows it.</div>
-            </div>
-          )}
-          <form className="stack" onSubmit={submit}>
-            <label className="field"><span>Name on the account you paid from</span><input type="text" required value={sender} onChange={(e) => setSender(e.target.value)} /></label>
-            <label className="field"><span>Transfer reference (optional)</span><input type="text" value={reference} onChange={(e) => setReference(e.target.value)} /></label>
-            {error ? <div className="err">{error}</div> : null}
-            <button className="btn" disabled={busy || !ready || !sender.trim()}>{busy ? "Sending…" : "I have paid"}</button>
-            {!ready ? <div className="hint">Add at least 3 photos first.</div> : null}
-          </form>
-        </div>
-      ) : null}
-
-      {project.status === "payment_claimed" ? (
         <div className="card stack" style={{ gap: 8 }}>
-          <h3 style={{ fontSize: 22 }}>We are confirming your payment</h3>
-          <p className="muted" style={{ margin: 0 }}>Thank you. We check transfers between 8am and 10pm. Your website goes live as soon as we confirm, and you can direct your two videos right away.</p>
+          <h3 style={{ fontSize: 22 }}>Payment opens soon</h3>
+          <p className="muted" style={{ margin: 0 }}>We are switching payments on. Your celebration is saved, so come back shortly and pay here.</p>
         </div>
       ) : null}
 

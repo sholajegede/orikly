@@ -14,7 +14,7 @@ const NAV = [
   { href: "/app/settings", label: "Settings", k: "settings", match: (p: string) => p.startsWith("/app/settings") },
   { href: "/app/help", label: "Help", k: "help", match: (p: string) => p.startsWith("/app/help") },
 ];
-const DOT: Record<string, string> = { paid: "var(--green)", payment_claimed: "var(--gold)", suspended: "var(--zobo)", draft: "var(--line)" };
+const DOT: Record<string, string> = { paid: "var(--green)", suspended: "var(--zobo)", draft: "var(--line)" };
 
 function Update({ onDone }: { onDone?: () => void }) {
   const u = useQuery(api.announcements.current);

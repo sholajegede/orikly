@@ -12,7 +12,6 @@ export function Header() {
   const { signOut } = useAuthActions();
   const router = useRouter();
   const pathname = usePathname();
-  const creator = useQuery(api.creators.mine, isAuthenticated ? {} : "skip");
   const [open, setOpen] = useState(false);
 
   useEffect(() => setOpen(false), [pathname]);
@@ -27,7 +26,6 @@ export function Header() {
     { href: "/#how", label: "How it works" },
     { href: "/wall", label: "The wall" },
     { href: "/partners", label: "For planners" },
-    ...(isAuthenticated && creator ? [{ href: "/app/creator", label: "Studio" }] : []),
   ];
   const leave = () => { void signOut().then(() => router.push("/")); };
 

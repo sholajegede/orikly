@@ -7,7 +7,7 @@ import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@convex/_generated/api";
 import { AppBar } from "@/components/AppBar";
-import { daysUntil, siteUrl } from "@/lib/format";
+import { daysUntil, siteUrl, prettyDate } from "@/lib/format";
 import { textileSize, textileUrl } from "@/lib/textile";
 import { useTrack } from "@/lib/track";
 
@@ -15,7 +15,6 @@ type Project = FunctionReturnType<typeof api.projects.mine>[number];
 
 const STATUS: Record<string, { text: string; cls: string }> = {
   draft: { text: "Draft", cls: "" },
-  payment_claimed: { text: "Confirming payment", cls: "warn" },
   paid: { text: "Live", cls: "ok" },
   suspended: { text: "Suspended", cls: "bad" },
 };
@@ -24,7 +23,6 @@ const cloth = { backgroundImage: textileUrl("adire", "#5a5fd6", "#2b2fa8", 0.7),
 /** The one thing this celebration needs next. */
 function nextStep(p: Project): { label: string; cta: string } {
   if (p.status === "suspended") return { label: "This site is suspended", cta: "Open" };
-  if (p.status === "payment_claimed") return { label: "We are confirming your transfer", cta: "Open" };
   if (p.status === "draft") return p.photos < 3 ? { label: `Add ${3 - p.photos} more photo${3 - p.photos === 1 ? "" : "s"}`, cta: "Continue" } : { label: "Ready to publish", cta: "Preview and pay" };
   if (!p.directed) return { label: "Your videos are waiting", cta: "Direct videos" };
   if (p.videos < 2) return { label: "Save your two videos", cta: "Save videos" };
@@ -91,7 +89,7 @@ export default function Dashboard() {
         {upcoming ? (
           <Link href={`/app/${upcoming._id}`} className="spot">
             <div className="count"><b>{daysUntil(upcoming.eventDate!)}</b><span>{daysUntil(upcoming.eventDate!) === 1 ? "day to go" : "days to go"}</span></div>
-            <div className="about"><span className="tagline">Coming up</span><b>{upcoming.names}</b><span>{nextStep(upcoming).label}</span></div>
+            <div className="about"><span className="tagline">Your next celebration</span><b>{upcoming.names}</b><span>On {prettyDate(upcoming.eventDate!)}. Next: {nextStep(upcoming).label.toLowerCase()}.</span></div>
             <span className="btn light small">{nextStep(upcoming).cta}</span>
           </Link>
         ) : null}

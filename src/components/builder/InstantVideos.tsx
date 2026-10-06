@@ -61,10 +61,11 @@ export function InstantVideos({ data }: { data: BuilderData }) {
     : null;
   const ready = !!plan && plan.shots.length >= 3 && !!photos?.length;
   const palette = PALETTES.find((p) => p.id === project.palette) ?? PALETTES[0];
+  const look = (project.siteDesign as { colors?: { accent: string; bg: string; ink: string } } | undefined)?.colors;
   const styles: Record<ReelFormat, ReelStyle> = { portrait: asStyle(project.videoStyles[0]), landscape: asStyle(project.videoStyles[1] ?? project.videoStyles[0]) };
   const scene = (format: ReelFormat): ReelScene | null =>
     ready
-      ? { plan, names: project.names, occasion: OCCASION[project.occasion] ?? "Celebration", dateLabel: project.eventDate ? prettyDate(project.eventDate) : undefined, line: project.headline ?? undefined, photos: photos!, accent: palette.accent, paper: palette.bg, ink: palette.ink, style: styles[format] }
+      ? { plan, names: project.names, occasion: OCCASION[project.occasion] ?? "Celebration", dateLabel: project.eventDate ? prettyDate(project.eventDate) : undefined, line: project.headline ?? undefined, photos: photos!, accent: look?.accent ?? palette.accent, paper: look?.bg ?? palette.bg, ink: look?.ink ?? palette.ink, style: styles[format] }
       : null;
   const preview = useMemo(() => scene(shape), [ready, shape, loadedIds.join(), stored?.at, project.names, project.eventDate, project.palette, project.videoStyles.join()]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -119,8 +120,8 @@ export function InstantVideos({ data }: { data: BuilderData }) {
     return (
       <div className="director">
         <div className="grow">
-          <b>Your two videos come after payment</b>
-          <span>An AI director studies every photo and your words, then cuts a tall and a wide video to your song. It takes a few minutes.</span>
+          <b>Your designed website and two videos come after payment</b>
+          <span>An AI designer and director studies every photo and your words. It designs the website around them, then cuts a tall and a wide video to your song. It takes a few minutes.</span>
         </div>
       </div>
     );
@@ -130,7 +131,7 @@ export function InstantVideos({ data }: { data: BuilderData }) {
   return (
     <div className="card stack" style={{ gap: 14 }}>
       <div className="row between">
-        <h3 style={{ fontSize: 24 }}>Your videos</h3>
+        <h3 style={{ fontSize: 24 }}>Your website design and videos</h3>
         {ready ? (
           <div className="pills light-ground">
             <button className={shape === "portrait" ? "on" : ""} onClick={() => setShape("portrait")}>Tall</button>
@@ -143,9 +144,9 @@ export function InstantVideos({ data }: { data: BuilderData }) {
         <div className="director">
           <div className="grow">
             <b>{directing ? "The director is studying your photos…" : "Ready when you are"}</b>
-            <span>{directing ? "About a minute. It picks the order, finds every face and plans each camera move." : "Finish your photos, words and song first. The director uses all of them, and you get one free redo."}</span>
+            <span>{directing ? "About a minute. It picks your colors and layout, finds every face and plans each camera move." : "Finish your photos, words and song first. It designs your website and directs both videos from them. You get one free redo, and you can edit the website by hand for free any time."}</span>
           </div>
-          <button className="btn small" disabled={directing} onClick={() => void runDirector()}>{directing ? "Working…" : "Direct my videos"}</button>
+          <button className="btn small" disabled={directing} onClick={() => void runDirector()}>{directing ? "Working…" : "Design my website and videos"}</button>
         </div>
       ) : (
         <>
@@ -161,12 +162,13 @@ export function InstantVideos({ data }: { data: BuilderData }) {
           ) : (
             <div className="row">
               <button className="btn hot" disabled={!ready} onClick={() => void makeBoth()}>{made("portrait") && made("landscape") ? "Save them again" : "Save my two videos"}</button>
-              {left > 0 ? <button className="btn ghost" disabled={directing} onClick={() => void runDirector()}>{directing ? "Directing…" : "Try a different cut (1 free redo)"}</button> : <span className="muted small">Your free redo is used.</span>}
+              {left > 0 ? <button className="btn ghost" disabled={directing} onClick={() => void runDirector()}>{directing ? "Directing…" : "Try a different design and cut (1 free redo)"}</button> : <span className="muted small">Your free redo is used.</span>}
             </div>
           )}
           {made("portrait") && made("landscape") && !stage ? <p className="okmsg" style={{ margin: 0 }}>Both videos are saved. Download them below.</p> : null}
         </>
       )}
+      {project.siteDesign ? <p className="muted small" style={{ margin: 0 }}>Your website has its new design. <a href={`/app/preview/${project.slug}`} target="_blank" rel="noreferrer"><b>Open it</b></a>, or change it by hand in the Look step.</p> : null}
       {error ? <div className="err">{error}</div> : null}
     </div>
   );
