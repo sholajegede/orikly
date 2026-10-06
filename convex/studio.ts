@@ -259,18 +259,19 @@ const TOOL = {
       focus: { type: "array", description: "For EVERY photo: the point of the main face, so no crop cuts off a head.", items: { type: "object", required: ["photo", "x", "y"], properties: { photo: { type: "integer" }, x: { type: "number" }, y: { type: "number" } } } },
       film: {
         type: "array",
-        description: "The film, scene by scene. 12 to 22 scenes, 50 to 80 seconds in total.",
+        description: "The film, scene by scene. 18 to 28 scenes, 80 to 110 seconds in total.",
         items: {
           type: "object",
           required: ["kind", "seconds"],
           properties: {
-            kind: { type: "string", enum: [...SCENE_KINDS], description: "title: the headline animates in. photo: one photo fills the frame, with an optional line. counter: the big number counts up among flying photos. wall: a quote card beside two photos. line: one photo card beside one big line. clip: a video clip plays. wish: the candles, or confetti. closing: the last words." },
+            kind: { type: "string", enum: [...SCENE_KINDS], description: "title: the headline animates in. meet: 'Meet my ___' with the ticker names rolling through a pill while photos swap beside it (needs 3 or 4 photos in `photos`). photo: one photo fills the frame, with an optional line. counter: the big number counts up while photos pop in. wall: a quote card beside two photos. line: one photo card beside one big line, with an optional sentence under it. clip: a video clip plays. wish: the candles, or confetti. closing: the last words." },
             seconds: { type: "number" },
             tone: { type: "string", enum: [...TONES], description: "The ground for this scene. Alternate light and dark; keep loud for the wish and the close." },
             photo: { type: "integer" },
-            photos: { type: "array", items: { type: "integer" }, description: "For wall: exactly two photos." },
+            photos: { type: "array", items: { type: "integer" }, description: "For wall: exactly two photos. For meet: three or four photos of the person, different from each other." },
             clip: { type: "integer" },
-            text: { type: "string", description: "The line on screen, at most 70 characters, from the customer's words." },
+            text: { type: "string", description: "The big line on screen, in the display face. At most 60 characters, from the customer's words. Short hits harder: 3 to 9 words." },
+            body: { type: "string", description: "For line: one full sentence from the customer's words, shown smaller under the big line and revealed word by word. At most 130 characters. Use it when the big line is a short phrase that the sentence completes." },
             meta: { type: "string" },
             chip: { type: "string" },
           },
@@ -301,11 +302,25 @@ HOW TO CHOOSE
 - Give the focus point for every photo.
 
 THE FILM
-The film is the page in motion, for WhatsApp status and for a big screen. Cut it like a title sequence.
-- Open on the title. Follow with the cover photo. If there is a counter, show it early.
-- Then alternate: wall scenes (a line with two photos) and line scenes (one photo, one big line), changing tone between light and dark so it never sits still.
-- Use one or two clips if the customer gave video. End with the wish (birthdays) and the closing.
-- Each line on screen is one of theirs. Hold a scene long enough to read it twice: 3 to 5 seconds, 6 for the counter.
+The film is the page in motion, for WhatsApp status and for a big screen. Cut it like a title sequence, not a slideshow. Type is the star; photos support it. Every word appears one at a time, so each scene reads like someone saying it.
+
+The order that works:
+1. title.
+2. meet, when the ticker has names or pet names: it introduces the person with three or four of their best, most different photos.
+3. photo: the cover photo, full frame, with the single strongest line the customer wrote.
+4. counter, if there is one.
+5. The body, 12 to 20 scenes. Alternate wall scenes (a line beside two photos) with line scenes (one photo, one big line). Change the tone every scene or two: light, dark, light, dark. Never three scenes in a row with the same layout and tone.
+6. One or two clip scenes spread through the body, if the customer gave clips.
+7. Near the end, two or three line scenes taken from the closing of their letter: the prayer, the promise, the blessing.
+8. wish (birthdays), then closing.
+
+How to write the lines:
+- Every line is theirs. Shorten faithfully; never reword into something they did not say.
+- A long sentence becomes two scenes in a row: the first half, then the second half, each with its own photo. That pause is where the feeling is.
+- Or give a line scene a short big line (text) and the full sentence under it (body).
+- meta is a small label: where the line comes from, or the date if the customer gave one. chip is two or three words in the highlighter: "Still true", "Always", "Every day". Use a chip on about half the lines, and vary them.
+- Use every strong photo once before repeating any. Match the photo to the line: the graduation photo with the line about her degree, the laughing photo with the line about her laugh.
+- Hold a scene long enough to read it twice. Do not rush: 4 to 6 seconds for a line, 6 for the counter, 5 for meet.
 
 TRUTH
 Never invent a fact. No names, dates, places, numbers or events that are not in the brief. Do not describe anyone's body, age or ethnicity. Write plain, warm English. No emoji.

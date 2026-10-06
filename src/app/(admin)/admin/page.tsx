@@ -219,6 +219,8 @@ function Detail({ projectId }: { projectId: Id<"projects"> }) {
 function Customer({ userId }: { userId: Id<"users"> | null }) {
   const c = useQuery(api.admin.customer, userId ? { userId } : "skip");
   const addNote = useMutation(api.admin.addNote);
+  const give = useMutation(api.admin.giveCredits);
+  const [gift, setGift] = useState("12");
   const [note, setNote] = useState("");
   const [tag, setTag] = useState("");
   if (!userId) return <p className="muted">Pick a customer from the Projects tab.</p>;
@@ -232,6 +234,11 @@ function Customer({ userId }: { userId: Id<"users"> | null }) {
           <div className="small">Email: {c.user.email ?? "none"}</div>
           <div className="small">Came from: {c.user.source ?? "unknown"}</div>
           <div className="small">Making for: {c.user.segment ?? "not asked"} · Heard from: {c.user.heardFrom ?? "not asked"}</div>
+          <div className="row" style={{ gap: 8 }}>
+            <span className="small">Credits: <b>{c.user.credits ?? 0}</b></span>
+            <input type="text" inputMode="numeric" value={gift} onChange={(e) => setGift(e.target.value.replace(/\D/g, ""))} style={{ maxWidth: 80 }} aria-label="Credits to give" />
+            <button className="btn ghost small" disabled={!Number(gift)} onClick={() => void give({ userId, credits: Number(gift) })}>Give credits</button>
+          </div>
           <div className="small">First seen {shortDate(c.user.firstSeenAt)}{c.user.lastSeenAt ? ` · last seen ${shortDate(c.user.lastSeenAt)}` : ""}</div>
         </div>
         <div className="card stack" style={{ gap: 8 }}>

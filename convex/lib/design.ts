@@ -7,7 +7,7 @@ export const BODY_FONTS = ["DM Sans", "Figtree", "Karla", "Bricolage Grotesque"]
 export const HERO_LAYOUTS = ["poster", "split", "cover"] as const;
 export const RADII = ["round", "soft", "sharp"] as const;
 export const SECTION_TYPES = ["wall", "moment", "letter", "details", "films", "gift", "wishes"] as const;
-export const SCENE_KINDS = ["title", "photo", "counter", "wall", "line", "clip", "wish", "closing"] as const;
+export const SCENE_KINDS = ["title", "meet", "photo", "counter", "wall", "line", "clip", "wish", "closing"] as const;
 export const TONES = ["light", "dark", "loud"] as const;
 
 export type Tile = { t: "photo"; photo: string; wide?: boolean } | { t: "quote"; text: string; meta?: string; chip?: string } | { t: "clip"; clip: string };
@@ -32,6 +32,7 @@ export type Scene = {
   photos?: string[];
   clip?: string;
   text?: string;
+  body?: string;
   meta?: string;
   chip?: string;
 };
@@ -251,12 +252,13 @@ function tidyFilm(raw: unknown, d: SiteDesign, okPhoto: Set<string>, okClip: Set
     if (s.kind !== kind) continue;
     const scene: Scene = {
       kind,
-      seconds: Math.min(9, Math.max(2.2, typeof s.seconds === "number" ? s.seconds : 4)),
+      seconds: Math.min(10, Math.max(2.4, typeof s.seconds === "number" ? s.seconds : 4.5)),
       tone: s.tone ? pick(TONES, s.tone, "light") : undefined,
       photo: typeof s.photo === "string" && okPhoto.has(s.photo) ? s.photo : undefined,
       photos: arr(s.photos).filter((p): p is string => typeof p === "string" && okPhoto.has(p)).slice(0, 4),
       clip: typeof s.clip === "string" && okClip.has(s.clip) ? s.clip : undefined,
       text: str(s.text, 110),
+      body: str(s.body, 150),
       meta: str(s.meta, 60),
       chip: str(s.chip, 28),
     };
@@ -265,8 +267,12 @@ function tidyFilm(raw: unknown, d: SiteDesign, okPhoto: Set<string>, okClip: Set
     if (kind === "wall" && (!scene.text || (scene.photos ?? []).length < 2)) continue;
     if (kind === "clip" && !scene.clip) continue;
     if (kind === "counter" && !d.count) continue;
+    if (kind === "meet" && (d.ticker.length < 2 || (scene.photos ?? []).length < 2)) continue;
+    // Give every line the time it takes to read it twice.
+    const words = `${scene.text ?? ""} ${scene.body ?? ""}`.trim().split(/\s+/).filter(Boolean).length;
+    if (kind === "line" || kind === "wall" || kind === "photo") scene.seconds = Math.max(scene.seconds, Math.min(9, 2.4 + words * 0.24));
     scenes.push(scene);
-    if (scenes.length >= 26) break;
+    if (scenes.length >= 32) break;
   }
   if (scenes.filter((s) => s.kind !== "title" && s.kind !== "closing").length < 4) return cutFilm(d);
   if (scenes[0].kind !== "title") scenes.unshift({ kind: "title", seconds: 4 });
@@ -277,6 +283,8 @@ function tidyFilm(raw: unknown, d: SiteDesign, okPhoto: Set<string>, okClip: Set
 /** A film cut straight from the page: title, cover, counter, the wall in threes, the wish, the close. */
 export function cutFilm(d: SiteDesign): Scene[] {
   const scenes: Scene[] = [{ kind: "title", seconds: 4 }];
+  const faces = d.sections.flatMap((s) => s.tiles ?? []).filter((t): t is Extract<Tile, { t: "photo" }> => t.t === "photo").map((t) => t.photo);
+  if (d.ticker.length >= 2 && faces.length >= 3) scenes.push({ kind: "meet", seconds: 5, photos: faces.slice(0, 4) });
   if (d.hero.photo) scenes.push({ kind: "photo", seconds: 4, photo: d.hero.photo, text: d.opener?.text.slice(0, 90) });
   if (d.count) scenes.push({ kind: "counter", seconds: 5 });
   const tiles = d.sections.filter((s) => s.type === "wall" && !s.hidden).flatMap((s) => s.tiles ?? []);

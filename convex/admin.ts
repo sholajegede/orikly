@@ -176,7 +176,7 @@ export const customer = query({
         name: user.name ?? null,
         source: user.source ?? null,
         segment: user.segment ?? null,
-        heardFrom: user.heardFrom ?? null,
+        heardFrom: user.heardFrom ?? null, credits: user.credits ?? 0,
         firstSeenAt: user.firstSeenAt ?? user._creationTime,
         lastSeenAt: user.lastSeenAt ?? null,
       },
@@ -221,6 +221,20 @@ export const setProjectStatus = mutation({
     const status = action === "suspend" ? "suspended" : project.paidAt ? "paid" : "draft";
     await ctx.db.patch(projectId, { status, updatedAt: Date.now() });
     await logEvent(ctx, { name: `admin_${action}`, userId: project.ownerId, projectId, props: { by: admin.email ?? "admin" } });
+  },
+});
+
+/** Put credits in a customer's account without payment: a gift, a test, or making good on a problem. */
+export const giveCredits = mutation({
+  args: { userId: v.id("users"), credits: v.number() },
+  handler: async (ctx, { userId, credits }) => {
+    const admin = await requireAdmin(ctx);
+    const n = Math.round(credits);
+    if (!(n >= 1 && n <= 240)) throw new ConvexError("Give between 1 and 240 credits.");
+    const user = await ctx.db.get(userId);
+    if (!user) throw new ConvexError("Customer not found.");
+    await ctx.db.patch(userId, { credits: (user.credits ?? 0) + n });
+    await logEvent(ctx, { name: "credits_given", userId, props: { credits: n, by: admin.email ?? "admin" } });
   },
 });
 

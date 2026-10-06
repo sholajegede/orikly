@@ -49,6 +49,21 @@ function rise(frame: number, delay = 0, dur = 16): CSSProperties {
 function pop(frame: number, delay = 0, dur = 18): number {
   return interpolate(frame, [delay, delay + dur], [0, 1], { ...clamp, easing: EASE });
 }
+/** Type that arrives one word at a time, the way a person says it. Words wait in grey, then turn solid. */
+function Words({ text, frame, start = 6, per = 3.2 }: { text: string; frame: number; start?: number; per?: number }) {
+  const words = text.split(/\s+/).filter(Boolean);
+  return (
+    <>
+      {words.map((w, i) => {
+        const at = start + i * per;
+        const seen = interpolate(frame, [at - 7, at - 2], [0, 0.28], clamp);
+        const solid = interpolate(frame, [at, at + 5], [0, 0.72], clamp);
+        return <span key={i} style={{ opacity: seen + solid, display: "inline-block", whiteSpace: "pre", transform: `translateY(${(1 - Math.min(1, (seen + solid) / 0.28)) * 0.25}em)` }}>{w}{i < words.length - 1 ? " " : ""}</span>;
+      })}
+    </>
+  );
+}
+
 function fit(text: string, sizes: [number, number][], fallback: number): number {
   for (const [max, size] of sizes) if (text.length <= max) return size;
   return fallback;
@@ -107,11 +122,43 @@ function Title({ k, data }: { k: Kit; data: FilmData }) {
   );
 }
 
+/** "Meet my ___": the names they call each other roll through a pill while the photos change beside it. */
+function Meet({ k, s, data }: { k: Kit; s: Scene; data: FilmData }) {
+  const f = useCurrentFrame();
+  const { durationInFrames, width } = useVideoConfig();
+  const c = k.d.colors;
+  const names = [...k.d.ticker.filter((n) => n.toLowerCase() !== data.names.toLowerCase()).slice(0, 4), data.names];
+  const pics = (s.photos ?? []).map((id) => ({ id, src: k.photo(id) })).filter((p): p is { id: string; src: string } => !!p.src);
+  const step = (durationInFrames - 30) / names.length;
+  const at = Math.min(names.length - 1, Math.max(0, Math.floor((f - 10) / step)));
+  const within = Math.max(0, f - 10 - at * step);
+  const m = k.tall ? 1 : 1.3;
+  const row = 6.2 * k.u * m;
+  const roll = at + (at < names.length - 1 ? interpolate(within, [step - 9, step], [0, 1], { ...clamp, easing: EASE }) : 0);
+  const pic = pics[Math.min(pics.length - 1, Math.floor((at / names.length) * pics.length))];
+  const swap = pop(within, 0, 10);
+  return (
+    <AbsoluteFill style={{ background: `linear-gradient(160deg, ${c.loud}, color-mix(in srgb, ${c.loud} 72%, ${c.loudDeep}))`, color: onDeep(c), flexDirection: k.tall ? "column" : "row", alignItems: "center", justifyContent: "center", gap: 6 * k.u, padding: 7 * k.u }}>
+      <div style={{ ...k.display(Math.min(width * 0.42, 60 * k.u)), position: "absolute", left: "-4%", top: k.tall ? "30%" : "12%", whiteSpace: "nowrap", opacity: 0.12, transform: `translateX(${-f * 1.2}px)` }}>{data.names.toUpperCase()} {data.names.toUpperCase()}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 2.4 * k.u, position: "relative", ...rise(f, 2) }}>
+        <span style={{ fontSize: 5.4 * k.u * m, fontWeight: 500 }}>Meet my</span>
+        <div style={{ height: row, overflow: "hidden", background: c.card, color: c.ink, borderRadius: 999, padding: `0 ${2.6 * k.u}px` }}>
+          <div style={{ transform: `translateY(${-roll * row}px)` }}>
+            {names.map((n, i) => <div key={i} style={{ height: row, display: "flex", alignItems: "center", fontSize: 3.9 * k.u * m, fontWeight: 700, whiteSpace: "nowrap" }}>{n}</div>)}
+          </div>
+        </div>
+      </div>
+      {pic ? <Card key={pic.id} k={k} src={pic.src} focus={k.focus(pic.id)} zoom={Math.min(1, within / step)} style={{ position: "relative", width: (k.tall ? 62 : 44) * k.u, aspectRatio: "4 / 5", flex: "0 0 auto", boxShadow: "0 30px 70px rgba(0,0,0,0.3)", opacity: 0.4 + swap * 0.6, transform: `rotate(${(at % 2 ? 3 : -3) * (1 - swap * 0.4)}deg) scale(${0.94 + swap * 0.06})` }} /> : null}
+    </AbsoluteFill>
+  );
+}
+const onDeep = (c: SiteDesign["colors"]) => c.loudInk;
+
 function Caption({ k, text, frame }: { k: Kit; text: string; frame: number }) {
   return (
     <>
       <AbsoluteFill style={{ background: "linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.82) 100%)" }} />
-      <div style={{ position: "absolute", left: 6 * k.u, right: 6 * k.u, bottom: (k.tall ? 16 : 9) * k.u, color: "#fff", ...k.display(fit(text, [[26, 12], [48, 10], [80, 8.2]], 7) * k.u), lineHeight: 1, maxWidth: k.tall ? undefined : "62%", ...rise(frame, 10, 18) }}>{text}</div>
+      <div style={{ position: "absolute", left: 6 * k.u, right: 6 * k.u, bottom: (k.tall ? 16 : 9) * k.u, color: "#fff", ...k.display(fit(text, [[26, 12], [48, 10], [80, 8.2]], 7) * k.u), lineHeight: 1, maxWidth: k.tall ? undefined : "62%" }}><Words text={text} frame={frame} start={12} /></div>
     </>
   );
 }
@@ -129,7 +176,7 @@ function PhotoScene({ k, s }: { k: Kit; s: Scene }) {
       <AbsoluteFill style={{ background: "#000", color: "#fff", flexDirection: "row", alignItems: "center", gap: 6 * k.u, padding: `0 ${9 * k.u}px` }}>
         <Img src={src} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: `blur(${4 * k.u}px) brightness(0.55)`, transform: "scale(1.25)" }} />
         <Card k={k} src={src} focus={k.focus(s.photo)} zoom={pop(f, 0, durationInFrames)} style={{ position: "relative", height: "84%", aspectRatio: "4 / 5", flex: "0 0 auto", boxShadow: "0 30px 80px rgba(0,0,0,0.45)", transform: `scale(${0.96 + pop(f, 0, 20) * 0.04})` }} />
-        {text ? <div style={{ position: "relative", ...k.display(fit(text, [[26, 12], [48, 10], [80, 8.2]], 7) * k.u), lineHeight: 1, ...rise(f, 10, 18) }}>{text}</div> : null}
+        {text ? <div style={{ position: "relative", ...k.display(fit(text, [[26, 12], [48, 10], [80, 8.2]], 7) * k.u), lineHeight: 1 }}><Words text={text} frame={f} start={12} /></div> : null}
       </AbsoluteFill>
     );
   }
@@ -165,16 +212,16 @@ function Counter({ k, data }: { k: Kit; data: FilmData }) {
   const around = data.photos.filter((p) => p.id !== k.d.hero.photo).slice(0, 4);
   const spots = k.tall
     ? [{ left: "-6%", top: "3%", r: -8 }, { right: "-8%", top: "6%", r: 7 }, { left: "-4%", bottom: "2%", r: 6 }, { right: "-6%", bottom: "4%", r: -7 }]
-    : [{ left: "3%", top: "8%", r: -7 }, { right: "4%", top: "5%", r: 6 }, { left: "6%", bottom: "6%", r: 5 }, { right: "5%", bottom: "8%", r: -6 }];
+    : [{ right: "25%", top: "9%", r: -6 }, { right: "5%", top: "12%", r: 5 }, { right: "26%", bottom: "9%", r: 4 }, { right: "6%", bottom: "7%", r: -5 }];
   return (
-    <AbsoluteFill style={{ background: g.bg, alignItems: "center", justifyContent: "center" }}>
+    <AbsoluteFill style={{ background: g.bg, alignItems: k.tall ? "center" : "flex-start", justifyContent: "center", paddingLeft: k.tall ? 0 : 7 * k.u }}>
       {around.map((p, i) => {
         const { r, ...pos } = spots[i];
-        const a = pop(f, i * 4, 22);
-        return <Card key={p.id} k={k} src={p.url} focus={k.focus(p.id)} zoom={a} style={{ position: "absolute", width: (k.tall ? 44 : 28) * k.u, aspectRatio: "4 / 5", ...pos, opacity: a, transform: `rotate(${r}deg) translateY(${(1 - a) * 8 * k.u + Math.sin((f + i * 20) / 30) * 0.6 * k.u}px)` }} />;
+        const a = pop(f, 10 + i * 9, 18);
+        return <Card key={p.id} k={k} src={p.url} focus={k.focus(p.id)} zoom={a} style={{ position: "absolute", width: (k.tall ? 44 : 31) * k.u, aspectRatio: "4 / 5", ...pos, opacity: a, transform: `rotate(${r}deg) translateY(${(1 - a) * 8 * k.u + Math.sin((f + i * 20) / 30) * 0.6 * k.u}px)` }} />;
       })}
       <Marks color={g.fg} u={k.u} />
-      <div style={{ width: (k.tall ? 80 : 66) * k.u, background: k.d.colors.loud, color: k.d.colors.loudInk, borderRadius: k.r * 1.3, padding: `${4 * k.u}px ${4.4 * k.u}px`, position: "relative", transform: `scale(${0.92 + pop(f, 0, 18) * 0.08})`, opacity: pop(f, 0, 10) }}>
+      <div style={{ width: (k.tall ? 80 : 62) * k.u, background: k.d.colors.loud, color: k.d.colors.loudInk, borderRadius: k.r * 1.3, padding: `${4 * k.u}px ${4.4 * k.u}px`, position: "relative", transform: `scale(${0.92 + pop(f, 0, 18) * 0.08})`, opacity: pop(f, 0, 10) }}>
         <div style={k.mono()}>{count.label}</div>
         <div style={{ ...k.display(24 * k.u), lineHeight: 1, margin: `${1.2 * k.u}px 0`, fontVariantNumeric: "tabular-nums" }}>{shown}</div>
         <div style={{ height: 3, background: "color-mix(in srgb, currentColor 22%, transparent)" }}><div style={{ height: "100%", width: `${t * 78}%`, background: "currentColor" }} /></div>
@@ -193,8 +240,8 @@ function Quote({ k, g, s, f, style }: { k: Kit; g: Ground; s: Scene; f: number; 
   const text = s.text ?? "";
   return (
     <div style={{ background: g.card, color: g.fg, borderRadius: k.r, padding: 3.6 * k.u, display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 2 * k.u, ...style }}>
-      <div style={{ ...k.display(fit(text, [[24, 13], [44, 11], [70, 9]], 7.4) * k.u * (k.tall ? 1.22 : 1)), lineHeight: 1.0, ...rise(f, 6) }}>{text}</div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: k.u, ...rise(f, 18) }}>
+      <div style={{ ...k.display(fit(text, [[24, 13], [44, 11], [70, 9]], 7.4) * k.u * (k.tall ? 1.22 : 1)), lineHeight: 1.0 }}><Words text={text} frame={f} /></div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: k.u, ...rise(f, 14 + text.split(" ").length * 3.2) }}>
         <span style={{ ...k.mono(), color: g.soft }}>{s.meta ?? ""}</span>
         {s.chip ? <Chip k={k} text={s.chip} /> : null}
       </div>
@@ -235,12 +282,14 @@ function LineScene({ k, s, flip }: { k: Kit; s: Scene; flip: boolean }) {
   const g = ground(k.d, s.tone ?? "dark");
   const src = k.photo(s.photo);
   const text = s.text ?? "";
+  const said = text.split(/\s+/).length;
   if (!src) return null;
   const words = (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 2.4 * k.u, minWidth: 0 }}>
       {s.meta ? <div style={{ ...k.mono(), color: g.soft, ...rise(f, 4) }}>{s.meta}</div> : null}
-      <div style={{ ...k.display(fit(text, [[22, 14], [40, 11.6], [64, 9.6]], 8) * k.u * (k.tall ? 1.2 : 1)), lineHeight: 1.0, ...rise(f, 8) }}>{text}</div>
-      {s.chip ? <div style={rise(f, 20)}><Chip k={k} text={s.chip} /></div> : null}
+      <div style={{ ...k.display(fit(text, [[22, 14], [40, 11.6], [64, 9.6]], 8) * k.u * (k.tall ? 1.2 : 1)), lineHeight: 1.0 }}><Words text={text} frame={f} start={8} /></div>
+      {s.body ? <div style={{ fontSize: (k.tall ? 4.4 : 3.6) * k.u, lineHeight: 1.35, fontWeight: 500, maxWidth: 30 * (k.tall ? 4.4 : 3.6) * k.u * 0.55 }}><Words text={s.body} frame={f} start={16 + said * 3.2} per={2.4} /></div> : null}
+      {s.chip ? <div style={rise(f, 22 + said * 3.2 + (s.body ? s.body.split(" ").length * 2.4 : 0))}><Chip k={k} text={s.chip} /></div> : null}
     </div>
   );
   const pic = <Card k={k} src={src} focus={k.focus(s.photo)} zoom={pop(f, 0, 70)} style={k.tall ? { flex: "0 0 58%" } : { flex: "0 0 36%" }} />;
@@ -324,7 +373,7 @@ export function Film({ data, format }: FilmProps) {
   const { width, height, fps } = useVideoConfig();
   useFonts(d);
   const u = Math.min(width, height) / 100;
-  const scale = DISPLAY_SCALE[d.fonts.display] ?? 1;
+  const scale = Math.pow(DISPLAY_SCALE[d.fonts.display] ?? 1, 0.6);
   const urls = new Map(data.photos.map((p) => [p.id, p.url]));
   const k: Kit = {
     d,
@@ -347,6 +396,7 @@ export function Film({ data, format }: FilmProps) {
     if (s.kind === "wall" || s.kind === "line") wallNo += 1;
     const body =
       s.kind === "title" ? <Title k={k} data={data} /> :
+      s.kind === "meet" ? <Meet k={k} s={s} data={data} /> :
       s.kind === "photo" ? <PhotoScene k={k} s={s} /> :
       s.kind === "clip" ? <ClipScene k={k} s={s} data={data} /> :
       s.kind === "counter" ? <Counter k={k} data={data} /> :
