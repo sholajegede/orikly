@@ -55,7 +55,7 @@ export default async function Landing() {
           <div className="wrap">
             <p className="tagline">Weddings, birthdays, anniversaries</p>
             <h1>Praise them <em>properly.</em></h1>
-            <p className="lead">Your photos become a celebration website and two videos, sharp sharp. About ten minutes, from your phone. No designer. No wahala.</p>
+            <p className="lead">Give us their photos, your words and a song. An art director designs a website around them, no template, so it looks like nobody else&apos;s. Then it becomes two films, set to that song. You spend ten minutes on your phone. No designer. No wahala.</p>
             <div className="row cta">
               <Link href="/login" className="btn hot">Start free</Link>
               <a href="#how" className="btn ghost">See how it works</a>
