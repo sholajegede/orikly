@@ -79,7 +79,7 @@ export const LEGAL: Record<string, Doc> = {
     sections: [
       { h: "1. The data we collect", body: [
         { table: [
-          ["Account", "Your email address, your name and your WhatsApp number if you give them.", "You"],
+          ["Account", "Your email address, and your name if you give it.", "You"],
           ["Celebration content", "Photos, videos, names, dates, your story and messages, your song, venue and dress code, and bank details if you choose to show them for gifts.", "You"],
           ["Guest wishes", "The name and message a guest types on a celebration website.", "Guests"],
           ["Payments", "What you bought, the amount, the time, a payment reference, and for bank transfers the sender name you give us. We never receive your card number.", "You and our payment partner"],

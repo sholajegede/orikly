@@ -4,6 +4,7 @@ import type { QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { currentUser, isAdminEmail, requireOwnedProject, requireUser } from "./lib/auth";
 import { logEvent } from "./lib/events";
+import { lifetime } from "./lib/counters";
 import {
   MAX_PROJECTS_PER_USER,
   PALETTES,
@@ -98,15 +99,26 @@ export const mine = query({
       .order("desc")
       .collect();
     return await Promise.all(
-      projects.map(async (p) => ({
-        _id: p._id,
-        names: p.names,
-        slug: p.slug,
-        occasion: p.occasion,
-        status: p.status,
-        createdAt: p.createdAt,
-        coverUrl: await assetUrl(ctx, p.coverAssetId),
-      })),
+      projects.map(async (p) => {
+        const assets = await ctx.db.query("assets").withIndex("by_project", (q) => q.eq("projectId", p._id)).take(60);
+        const wishes = await ctx.db.query("wishes").withIndex("by_project", (q) => q.eq("projectId", p._id)).take(200);
+        return {
+          _id: p._id,
+          names: p.names,
+          slug: p.slug,
+          occasion: p.occasion,
+          status: p.status,
+          createdAt: p.createdAt,
+          eventDate: p.eventDate ?? null,
+          coverUrl: await assetUrl(ctx, p.coverAssetId),
+          photos: assets.filter((a) => a.kind === "photo").length,
+          views: await lifetime(ctx, `proj:${p._id}:site_view`),
+          wishes: wishes.filter((w) => w.status === "approved").length,
+          wishesWaiting: wishes.filter((w) => w.status === "pending").length,
+          videos: (p.deliverables ?? []).length,
+          directed: !!p.videoPlan,
+        };
+      }),
     );
   },
 });
