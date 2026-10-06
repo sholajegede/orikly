@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { PACKS, PRICE_KOBO } from "@convex/lib/constants";
-import { Header } from "@/components/Header";
+import { AppBar } from "@/components/AppBar";
 import { cleanError, naira, shortDate } from "@/lib/format";
 
 function Inner() {
@@ -107,7 +107,7 @@ function Inner() {
 export default function Credits() {
   return (
     <>
-      <Header />
+      <AppBar />
       <Suspense fallback={<main className="wrap"><p className="muted">Loading…</p></main>}><Inner /></Suspense>
     </>
   );

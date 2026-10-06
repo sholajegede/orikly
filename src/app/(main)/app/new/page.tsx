@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { Header } from "@/components/Header";
+import { AppBar } from "@/components/AppBar";
 import { cleanError } from "@/lib/format";
 import { OCCASIONS, normalizeSlug, type OccasionId } from "@convex/lib/constants";
 
@@ -43,7 +43,7 @@ export default function NewCelebration() {
 
   return (
     <>
-      <Header />
+      <AppBar />
       <main className="wrap narrow" style={{ padding: "28px 16px 64px" }}>
         <h1 className="display" style={{ fontSize: 44, marginBottom: 20 }}>New celebration</h1>
         <form className="card stack" onSubmit={submit}>

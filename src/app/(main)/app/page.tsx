@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@convex/_generated/api";
-import { Header } from "@/components/Header";
+import { AppBar } from "@/components/AppBar";
 import { daysUntil, siteUrl } from "@/lib/format";
 import { textileSize, textileUrl } from "@/lib/textile";
 import { useTrack } from "@/lib/track";
@@ -60,6 +60,10 @@ export default function Dashboard() {
 
   const list = projects ?? [];
   const first = (me?.name ?? "").trim().split(" ")[0];
+  const [hello, setHello] = useState("Welcome");
+  useEffect(() => { const h = new Date().getHours(); setHello(h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"); }, []);
+  // The nearest celebration still ahead gets the spotlight.
+  const upcoming = list.filter((p) => p.eventDate && daysUntil(p.eventDate) >= 0 && p.status !== "suspended").sort((a, b) => daysUntil(a.eventDate!) - daysUntil(b.eventDate!))[0];
   const credits = me?.credits ?? 0;
   const sum = (f: (p: Project) => number) => list.reduce((n, p) => n + f(p), 0);
   const stats = [
@@ -71,18 +75,22 @@ export default function Dashboard() {
 
   return (
     <>
-      <Header />
+      <AppBar />
       <main className="wrap dash">
         <div className="dash-top">
           <div>
-            <p className="tagline muted">{first ? `Welcome back, ${first}` : "Welcome"}</p>
-            <h1>Dashboard</h1>
-          </div>
-          <div className="row">
-            <Link href="/app/credits" className="btn ghost small">{credits ? "Buy more credits" : "Buy a pack"}</Link>
-            <Link href="/app/new" className="btn hot small">New celebration</Link>
+            <h1>{hello}{first ? <>, <em>{first}</em></> : null}</h1>
+            <p className="muted" style={{ margin: "6px 0 0" }}>{list.length ? "Here is where everything stands." : "Let us make your first celebration."}</p>
           </div>
         </div>
+
+        {upcoming ? (
+          <Link href={`/app/${upcoming._id}`} className="spot">
+            <div className="count"><b>{daysUntil(upcoming.eventDate!)}</b><span>{daysUntil(upcoming.eventDate!) === 1 ? "day to go" : "days to go"}</span></div>
+            <div className="about"><span className="tagline">Coming up</span><b>{upcoming.names}</b><span>{nextStep(upcoming).label}</span></div>
+            <span className="btn light small">{nextStep(upcoming).cta}</span>
+          </Link>
+        ) : null}
 
         <div className="kpis">
           {stats.map((s) => (
@@ -126,7 +134,7 @@ export default function Dashboard() {
         </section>
 
         <section className="dash-block dash-two">
-          <div className="card">
+          <div className="card" id="account">
             <div className="dash-head"><h2>Account</h2></div>
             <p className="muted small" style={{ margin: "0 0 14px" }}>Signed in as {me?.email ?? "…"}</p>
             <label className="field"><span>Your name</span>

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { Header } from "@/components/Header";
+import { AppBar } from "@/components/AppBar";
 import { Basics } from "@/components/builder/Basics";
 import { Media } from "@/components/builder/Media";
 import { Words } from "@/components/builder/Words";
@@ -25,10 +25,10 @@ export default function Builder() {
   const [step, setStep] = useState(0);
 
   if (data === undefined) {
-    return (<><Header /><main className="wrap" style={{ padding: 32 }}><p className="muted">Loading…</p></main></>);
+    return (<><AppBar /><main className="wrap" style={{ padding: 32 }}><p className="muted">Loading…</p></main></>);
   }
   if (data === null) {
-    return (<><Header /><main className="wrap" style={{ padding: 32 }}><p>We could not find this celebration.</p><Link className="btn" href="/app">Back</Link></main></>);
+    return (<><AppBar /><main className="wrap" style={{ padding: 32 }}><p>We could not find this celebration.</p><Link className="btn" href="/app">Back</Link></main></>);
   }
 
   const { project } = data;
@@ -36,7 +36,7 @@ export default function Builder() {
 
   return (
     <>
-      <Header />
+      <AppBar />
       <main className="wrap narrow" style={{ padding: "32px 20px 40px" }}>
         <div className="row between" style={{ marginBottom: 8 }}>
           <Link href="/app" className="muted small">← My celebrations</Link>
