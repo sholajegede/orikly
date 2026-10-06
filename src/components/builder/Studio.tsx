@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Player } from "@remotion/player";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
+import { COST } from "@convex/lib/constants";
 import { filmSeconds, type SiteDesign } from "@convex/lib/design";
 import { cleanError } from "@/lib/format";
 import { FILM_FPS, FILM_SIZE, Film, type FilmData, type FilmFormat } from "@/remotion/Film";
@@ -12,14 +13,15 @@ import type { BuilderData } from "./shared";
 const STEPS = [
   { at: ["queued", "designing"], title: "Designing your website", about: "The art director studies every photo and your words, then designs the page around them." },
   { at: ["reviewing"], title: "Looking it over, twice", about: "It photographs the website on a phone and a laptop, finds what is weak and fixes it." },
-  { at: ["filming"], title: "Rendering your two films", about: "One tall for WhatsApp status, one wide for a big screen, cut to your song." },
+  { at: ["filming"], title: "Rendering your films", about: "One tall for WhatsApp status, one wide for a big screen, cut to your song." },
 ];
 
 /** The studio's progress, the film preview, and the one free redo. Everything here runs without the customer. */
 export function Studio({ data }: { data: BuilderData }) {
   const { project, assets, songUrl } = data;
   const on = useQuery(api.studio.available);
-  const redo = useMutation(api.studio.redo);
+  const runStudio = useMutation(api.studio.run);
+  const me = useQuery(api.users.me);
   const [shape, setShape] = useState<FilmFormat>("portrait");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,10 +39,13 @@ export function Studio({ data }: { data: BuilderData }) {
     return { design, names: project.names, occasion: project.occasion, eventDate: project.eventDate ?? null, momentTitle: moment?.title, momentAfter: moment?.after, photos: pick("photo"), clips: pick("video"), songUrl };
   }, [design?.at, key, songUrl, project.names, project.eventDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const start = () => {
+  const have = me?.credits ?? 0;
+  const hasFilms = !!project.hasFilms || data.deliverables.some((d) => d.label.startsWith("Your film"));
+  const filmCost = hasFilms ? COST.refilm * 2 : COST.film * 2;
+  const start = (what: "redesign" | "films") => {
     setBusy(true);
     setError(null);
-    void redo({ id: project._id }).catch((e) => setError(cleanError(e))).finally(() => setBusy(false));
+    void runStudio({ id: project._id, what }).catch((e) => setError(cleanError(e))).finally(() => setBusy(false));
   };
 
   if (assets.filter((a) => a.kind === "photo").length < 3) return null;
@@ -48,7 +53,7 @@ export function Studio({ data }: { data: BuilderData }) {
     return (
       <div className="director">
         <div className="grow">
-          <b>Your designed website and two films are made after payment</b>
+          <b>Your designed website and films are made after you go live</b>
           <span>An art director studies every photo and your words, designs the website, checks its own work, then renders a tall and a wide film to your song. It takes about ten minutes and you do not have to wait on this page.</span>
         </div>
       </div>
@@ -79,7 +84,7 @@ export function Studio({ data }: { data: BuilderData }) {
         </div>
       ) : null}
 
-      {s?.stage === "failed" ? <div className="err">The studio stopped: {s.note ?? "something went wrong"}. Nothing was charged for this run.</div> : null}
+      {s?.stage === "failed" ? <div className="err">The studio stopped: {s.note ?? "something went wrong"}. Your credits for this run are back in your account.</div> : null}
 
       {film ? (
         <div className={`film-stage ${shape}`}>
@@ -90,12 +95,13 @@ export function Studio({ data }: { data: BuilderData }) {
 
       {on === false ? <p className="muted" style={{ margin: 0 }}>The studio is being switched on. Check back shortly.</p> : null}
       {!working && on !== false ? (
-        <div className="row">
-          {!s ? <button className="btn hot" disabled={busy} onClick={start}>{busy ? "Starting…" : "Make my website and films"}</button> : null}
-          {s?.stage === "failed" ? <button className="btn hot" disabled={busy} onClick={start}>{busy ? "Starting…" : "Try again"}</button> : null}
-          {s?.stage === "done" && s.runs < 2 ? <button className="btn ghost" disabled={busy} onClick={start}>{busy ? "Starting…" : "Make a different design and film (1 free redo)"}</button> : null}
-          {s?.stage === "done" && s.runs >= 2 ? <span className="muted small">Your free redo is used.</span> : null}
-        </div>
+        <>
+          <div className="row">
+            <button className={`btn ${hasFilms ? "ghost" : "hot"}`} disabled={busy || have < filmCost} onClick={() => start("films")}>{hasFilms ? `Make my films again · ${filmCost} credits` : `Make my two films · ${filmCost} credits`}</button>
+            <button className="btn ghost" disabled={busy || have < COST.redesign} onClick={() => start("redesign")}>New design · {COST.redesign} credits</button>
+          </div>
+          <p className="muted small" style={{ margin: 0 }}>You have {have} credit{have === 1 ? "" : "s"}. {hasFilms ? "Make the films again after you change the website by hand, so they match." : "Films are cut from your website's design."} {have < COST.redesign ? <a href="/app/credits"><b>Get more credits</b></a> : null}</p>
+        </>
       ) : null}
       {error ? <div className="err">{error}</div> : null}
     </div>

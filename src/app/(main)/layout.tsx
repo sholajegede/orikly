@@ -11,10 +11,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: { default: "Orikly: Praise them properly", template: "%s | Orikly" },
   description:
-    "A website and two videos for your wedding, birthday or anniversary. Upload your photos and words on your phone. ₦20,000, paid once.",
+    "A website and two videos for your wedding, birthday or anniversary. Upload your photos and words on your phone. ₦10,000 covers a website and two films.",
   openGraph: {
     title: "Orikly: Praise them properly",
-    description: "A website and two videos for your wedding, birthday or anniversary. ₦20,000, paid once.",
+    description: "A website and two videos for your wedding, birthday or anniversary. ₦10,000 covers a website and two films.",
     type: "website",
     siteName: "Orikly",
   },

@@ -49,7 +49,8 @@ export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
   }
 
   if (isLogin(request) && (await convexAuth.isAuthenticated())) {
-    return nextjsMiddlewareRedirect(request, "/app");
+    const next = request.nextUrl.searchParams.get("next");
+    return nextjsMiddlewareRedirect(request, next && next.startsWith("/app") ? next : "/app");
   }
   if (isProtected(request) && !(await convexAuth.isAuthenticated())) {
     const next = encodeURIComponent(path);

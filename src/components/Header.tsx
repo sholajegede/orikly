@@ -24,6 +24,7 @@ export function Header() {
 
   const links = [
     { href: "/#how", label: "How it works" },
+    { href: "/pricing", label: "Pricing" },
     { href: "/wall", label: "The wall" },
     { href: "/partners", label: "For planners" },
   ];

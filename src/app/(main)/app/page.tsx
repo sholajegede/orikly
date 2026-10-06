@@ -72,7 +72,7 @@ export default function Dashboard() {
     { n: list.filter((p) => p.status === "paid").length, l: "Live websites", s: `${list.filter((p) => p.status === "draft").length} in draft` },
     { n: sum((p) => p.views), l: "Website views", s: "Across all your links" },
     { n: sum((p) => p.wishesWaiting), l: "Wishes to approve", s: `${sum((p) => p.wishes)} showing` },
-    { n: credits, l: "Credits", s: credits ? "One publishes one celebration" : "Buy a pack and pay less" },
+    { n: credits, l: "Credits", s: credits ? "Never expire" : "A celebration uses 9" },
   ];
 
   return (

@@ -22,7 +22,7 @@ const place = (d: number, r: string) => ({ "--d": d, "--r": r }) as CSSPropertie
 const facts = [
   { n: "10", u: "minutes", d: "From your first photo to a link in the family group chat." },
   { n: "2", u: "videos", d: "Tall and wide. Directed by AI from your own photos, after you pay." },
-  { n: PRICE_LABEL, u: "once", d: "No monthly fee. Build it free. Pay when it sweets you." },
+  { n: PRICE_LABEL, u: "covers it", d: "Website and two films, with credits left over. No monthly fee." },
   { n: "0", u: "apps", d: "Nothing to download. It opens in the browser on any phone." },
 ];
 
@@ -37,7 +37,7 @@ const faqs = [
   { q: "How fast is it, really?", a: "Most people finish in about ten minutes. Your website is live the moment your payment is confirmed. Your two videos are ready a few minutes after that." },
   { q: "Do I pay before I see anything?", a: "No. You build and see your whole website first. Your designed website and two films are made after you pay, because they use real AI time." },
   { q: "Who makes the videos?", a: "An AI art director does. It studies every photo and reads your words, designs your website, looks at its own work and improves it, then cuts two films from that design to your song. It all happens by itself after you pay, in about ten minutes. You do not have to keep the page open." },
-  { q: "How do I pay?", a: "By card or bank transfer on a secure payment page. It is ₦20,000, once." },
+  { q: "How do I pay?", a: "By card or bank transfer on a secure payment page. ₦10,000 buys 12 credits: enough for a website and two films, with 3 credits left over for a new design or your next celebration." },
   { q: "Can I use my own song?", a: "Yes. Upload it and it plays in your videos. It stays in your downloadable videos and does not play on the public website." },
   { q: "Can I change things after I pay?", a: "Your website, yes: update the photos, words and colors when you need to. Your films are made once, and you get one free redo if you want a different design and cut." },
   { q: "Who can see my website?", a: "Only people who have your link. We tell search engines not to list it, and we do not put advertising trackers on it." },
@@ -60,7 +60,7 @@ export default async function Landing() {
               <Link href="/login" className="btn hot">Start free</Link>
               <a href="#how" className="btn ghost">See how it works</a>
             </div>
-            <p className="fine">{PRICE_LABEL} once. Build your website free. Pay when it sweets you.</p>
+            <p className="fine">{PRICE_LABEL} covers a website and two films. Build free. Pay when it sweets you.</p>
           </div>
 
           <div className="objs" aria-hidden="true">
@@ -187,17 +187,18 @@ export default async function Landing() {
         <section className="bandx hot">
           <div className="wrap price-x">
             <div>
-              <p className="tagline">One price. No story.</p>
+              <p className="tagline">Pay for what you make. No story.</p>
               <div className="amount display">{PRICE_LABEL}</div>
             </div>
             <div>
               <ul>
                 <li><b>Your own website</b> with photos, story, countdown, venue and wishes</li>
-                <li><b>Two videos</b>, directed by AI, ready in minutes</li>
+                <li><b>Two films</b>, cut from your website's design to your song</li>
+                <li><b>Credits left over</b> for a new design or your next celebration</li>
                 <li><b>Yours to keep.</b> Your link stays up and your videos are yours to download</li>
                 <li><b>Free to build.</b> Pay only when it sweets you</li>
               </ul>
-              <Link href="/login" className="btn dark">Start free</Link>
+              <div className="row"><Link href="/login" className="btn dark">Start free</Link><Link href="/pricing" className="btn ghost">See all prices</Link></div>
             </div>
           </div>
         </section>

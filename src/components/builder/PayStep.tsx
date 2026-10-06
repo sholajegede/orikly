@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { PRICE_KOBO } from "@convex/lib/constants";
+import { COST, creditPriceKobo, creditStepFor, STARTER_CREDITS } from "@convex/lib/constants";
 import { cleanError, naira, shortDate, siteUrl } from "@/lib/format";
 import { useTrack } from "@/lib/track";
 import type { BuilderData } from "./shared";
@@ -27,7 +27,8 @@ export function PayStep({ data }: { data: BuilderData }) {
   const me = useQuery(api.users.me);
   const cfg = useQuery(api.bachs.config);
   const checkout = useAction(api.bachs.checkoutProject);
-  const useCredit = useMutation(api.packs.useCredit);
+  const publish = useMutation(api.packs.publish);
+  const [films, setFilms] = useState(true);
   const setWall = useMutation(api.projects.update);
   const setWish = useMutation(api.wishes.setStatus);
   const [busy, setBusy] = useState(false);
@@ -42,7 +43,7 @@ export function PayStep({ data }: { data: BuilderData }) {
       const k = `orikly_purchase_${project._id}`;
       if (window.localStorage.getItem(k)) return;
       window.localStorage.setItem(k, "1");
-      track("purchase_seen", { slug: project.slug, naira: PRICE_KOBO / 100, id: project._id });
+      track("purchase_seen", { slug: project.slug, naira: creditPriceKobo(STARTER_CREDITS) / 100, id: project._id });
     } catch {
       /* ignore */
     }
@@ -52,6 +53,10 @@ export function PayStep({ data }: { data: BuilderData }) {
   const url = siteUrl(project.slug);
   const previewHref = `/app/preview/${project.slug}`;
   const ready = photos >= 3;
+  const have = me?.credits ?? 0;
+  const need = COST.site + (films ? COST.film * 2 : 0);
+  // Someone starting from nothing gets the starter, which leaves credits over. Otherwise, the smallest top-up that covers it.
+  const buy = have === 0 && films ? STARTER_CREDITS : creditStepFor(need - have);
 
   const share = `Come and see our celebration page: ${url}`;
 
@@ -69,24 +74,34 @@ export function PayStep({ data }: { data: BuilderData }) {
 
       {project.status === "suspended" ? <div className="card err">This site is suspended. Please contact support.</div> : null}
 
-      {project.status === "draft" && (me?.credits ?? 0) > 0 ? (
-        <div className="card stack" style={{ gap: 10 }}>
-          <div className="row between"><h3 style={{ fontSize: 22 }}>You have {me?.credits} credit{me?.credits === 1 ? "" : "s"}</h3><span className="chip gold">No payment needed</span></div>
-          <p className="muted" style={{ margin: 0 }}>Use one credit to publish this celebration. The studio then makes its website and two films.</p>
-          {error ? <div className="err">{error}</div> : null}
-          <div><button className="btn gold" disabled={busy || !ready} onClick={() => { setBusy(true); setError(null); void useCredit({ id: project._id }).catch((e) => setError(cleanError(e))).finally(() => setBusy(false)); }}>Use a credit</button></div>
-          {!ready ? <div className="hint">Add at least 3 photos first.</div> : null}
-        </div>
-      ) : null}
-
-      {project.status === "draft" && cfg?.online ? (
-        <div className="card stack" style={{ gap: 10 }}>
-          <div className="row between"><h3 style={{ fontSize: 22 }}>Pay {naira(PRICE_KOBO)}</h3><span className="chip">One time</span></div>
-          <p className="muted" style={{ margin: 0 }}>Pay by card or bank transfer on a secure page. The moment your payment enters, your website goes live and this page updates by itself.</p>
-          {error ? <div className="err">{error}</div> : null}
-          <div>
-            <button className="btn gold" disabled={busy || !ready} onClick={() => { setBusy(true); setError(null); track("checkout_started", { slug: project.slug, naira: PRICE_KOBO / 100 }); void checkout({ projectId: project._id }).then((url) => { window.location.href = url; }).catch((e) => { setError(cleanError(e)); setBusy(false); }); }}>{busy ? "Opening payment page…" : `Pay ${naira(PRICE_KOBO)}`}</button>
+      {project.status === "draft" ? (
+        <div className="card stack" style={{ gap: 14 }}>
+          <div className="row between"><h3 style={{ fontSize: 22 }}>What you are getting</h3><span className="chip gold">You have {have} credit{have === 1 ? "" : "s"}</span></div>
+          <div className="cost-rows tight">
+            <div><div><b>Your designed website</b><span>Designed around your photos and words, live at your own link.</span></div><em>{COST.site} credits</em></div>
+            <label style={{ cursor: "pointer" }}>
+              <div className="row" style={{ gap: 12, flexWrap: "nowrap", alignItems: "flex-start" }}>
+                <input type="checkbox" checked={films} onChange={(e) => setFilms(e.target.checked)} style={{ width: 22, height: 22, flex: "0 0 auto", marginTop: 2 }} />
+                <div><b>Two films</b><span>One tall for WhatsApp status, one wide for a big screen, cut to your song. You can add them later.</span></div>
+              </div>
+              <em>{COST.film * 2} credits</em>
+            </label>
+            <div className="total"><div><b>Total</b></div><em>{need} credits</em></div>
           </div>
+          {error ? <div className="err">{error}</div> : null}
+          {have >= need ? (
+            <>
+              <div><button className="btn gold" disabled={busy || !ready} onClick={() => { setBusy(true); setError(null); void publish({ id: project._id, films }).catch((e) => setError(cleanError(e))).finally(() => setBusy(false)); }}>{busy ? "Publishing…" : `Use ${need} credits and go live`}</button></div>
+              <div className="hint">You will have {have - need} credit{have - need === 1 ? "" : "s"} left.</div>
+            </>
+          ) : cfg?.online ? (
+            <>
+              <div>
+                <button className="btn gold" disabled={busy || !ready} onClick={() => { setBusy(true); setError(null); track("checkout_started", { slug: project.slug, naira: creditPriceKobo(buy) / 100 }); void checkout({ projectId: project._id, credits: buy, films }).then((url) => { window.location.href = url; }).catch((e) => { setError(cleanError(e)); setBusy(false); }); }}>{busy ? "Opening payment page…" : `Pay ${naira(creditPriceKobo(buy))} and go live`}</button>
+              </div>
+              <div className="hint">That buys {buy} credits. This celebration uses {need}{have ? ` (you already have ${have})` : ""}, so you keep {have + buy - need} for a new design or your next celebration. Pay by card or bank transfer on a secure page. Your website goes live by itself the moment the payment enters. <a href="/pricing" target="_blank" rel="noreferrer">See all prices</a>.</div>
+            </>
+          ) : null}
           {!ready ? <div className="hint">Add at least 3 photos first.</div> : null}
         </div>
       ) : null}
