@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import type { QueryCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { currentUser, isAdminEmail, requireOwnedProject, requireUser } from "./lib/auth";
 import { logEvent } from "./lib/events";
@@ -15,6 +15,8 @@ import {
   normalizeSlug,
   slugProblem,
 } from "./lib/constants";
+
+const MAX_LIVE_SLUG_CHANGES = 3;
 
 const occasionV = v.union(v.literal("wedding"), v.literal("birthday"), v.literal("anniversary"));
 
@@ -158,6 +160,25 @@ export const get = query({
   },
 });
 
+/** Remove a celebration and everything stored for it. Used by single delete and by account deletion. */
+export async function wipeProject(ctx: MutationCtx, project: Doc<"projects">) {
+  const assets = await ctx.db.query("assets").withIndex("by_project", (q) => q.eq("projectId", project._id)).take(200);
+  for (const a of assets) {
+    await ctx.storage.delete(a.storageId);
+    await ctx.db.delete(a._id);
+  }
+  const wishes = await ctx.db.query("wishes").withIndex("by_project", (q) => q.eq("projectId", project._id)).take(500);
+  for (const w of wishes) await ctx.db.delete(w._id);
+  const jobs = await ctx.db.query("jobs").withIndex("by_project", (q) => q.eq("projectId", project._id)).take(10);
+  for (const j of jobs) {
+    if (j.storageId) await ctx.storage.delete(j.storageId);
+    await ctx.db.delete(j._id);
+  }
+  if (project.songStorageId) await ctx.storage.delete(project.songStorageId);
+  for (const d of project.deliverables ?? []) await ctx.storage.delete(d.storageId);
+  await ctx.db.delete(project._id);
+}
+
 const clip = (s: string | undefined, max: number) => (s === undefined ? undefined : s.trim().slice(0, max));
 
 export const update = mutation({
@@ -198,8 +219,12 @@ export const update = mutation({
       next.names = n;
     }
     if (patch.slug !== undefined) {
-      if (project.status === "paid") throw new ConvexError("The link cannot change after payment. Contact support.");
       const s = normalizeSlug(patch.slug);
+      // A live link has been shared, so changing it breaks the old one. Allow it, but only a few times.
+      if (project.status === "paid" && s !== project.slug) {
+        if ((project.slugChanges ?? 0) >= MAX_LIVE_SLUG_CHANGES) throw new ConvexError("You have changed this link 3 times. Contact us to change it again.");
+        next.slugChanges = (project.slugChanges ?? 0) + 1;
+      }
       const problem = slugProblem(s);
       if (problem) throw new ConvexError(problem);
       const other = await slugOwner(ctx, s);
@@ -403,5 +428,16 @@ export const publicBySlug = query({
       wishes,
       featuredVideoUrl,
     };
+  },
+});
+
+/** Delete one celebration and every file, wish and plan that belongs to it. Payment records are kept. */
+export const remove = mutation({
+  args: { id: v.id("projects"), confirm: v.string() },
+  handler: async (ctx, { id, confirm }) => {
+    const { user, project } = await requireOwnedProject(ctx, id);
+    if (confirm.trim().toLowerCase() !== project.slug) throw new ConvexError("Type the link name exactly to confirm.");
+    await wipeProject(ctx, project);
+    await logEvent(ctx, { name: "project_deleted", userId: user._id, props: { status: project.status } });
   },
 });

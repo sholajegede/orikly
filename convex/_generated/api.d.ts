@@ -9,7 +9,9 @@
  */
 
 import type * as EmailOTP from "../EmailOTP.js";
+import type * as account from "../account.js";
 import type * as admin from "../admin.js";
+import type * as announcements from "../announcements.js";
 import type * as assets from "../assets.js";
 import type * as auth from "../auth.js";
 import type * as bachs from "../bachs.js";
@@ -40,7 +42,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   EmailOTP: typeof EmailOTP;
+  account: typeof account;
   admin: typeof admin;
+  announcements: typeof announcements;
   assets: typeof assets;
   auth: typeof auth;
   bachs: typeof bachs;

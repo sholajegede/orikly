@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
+import { cleanError } from "@/lib/format";
 import { api } from "@convex/_generated/api";
 import { OCCASIONS, normalizeSlug } from "@convex/lib/constants";
 import type { BuilderData, ProjectPatch } from "./shared";
@@ -18,7 +20,14 @@ export function Basics({ data, save }: { data: BuilderData; save: (p: ProjectPat
   const [bank, setBank] = useState(project.giftBank ?? "");
   const [acctName, setAcctName] = useState(project.giftAccountName ?? "");
   const [acctNo, setAcctNo] = useState(project.giftAccountNumber ?? "");
-  const locked = project.status === "paid";
+  const live = project.status === "paid";
+  const changesLeft = Math.max(0, 3 - (project.slugChanges ?? 0));
+  const locked = live && changesLeft === 0;
+  const removeProject = useMutation(api.projects.remove);
+  const router = useRouter();
+  const [confirm, setConfirm] = useState("");
+  const [asking, setAsking] = useState(false);
+  const [delError, setDelError] = useState<string | null>(null);
   const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "orikly.ng";
 
   useEffect(() => setNames(project.names), [project.names]);
@@ -39,7 +48,7 @@ export function Basics({ data, save }: { data: BuilderData; save: (p: ProjectPat
         <span>Your link</span>
         <input type="text" value={slug} disabled={locked} autoCapitalize="none" onChange={(e) => setSlug(normalizeSlug(e.target.value))} />
         <div className="hint">{slug}.{root}</div>
-        {locked ? <div className="hint">Your link cannot change after payment. Contact support if you need a change.</div> : null}
+        {locked ? <div className="hint">You have changed this link 3 times. Contact us to change it again.</div> : live ? <div className="hint">Your website is live. If you change the link, the old one stops working, so send the new one to your guests. {changesLeft} change{changesLeft === 1 ? "" : "s"} left.</div> : null}
         {check && !check.ok ? <div className="err" style={{ marginTop: 6 }}>{check.reason}</div> : null}
         {!locked && slug !== project.slug ? (
           <button type="button" className="btn small" style={{ marginTop: 8 }} disabled={!check?.ok} onClick={() => void save({ slug })}>
@@ -79,6 +88,18 @@ export function Basics({ data, save }: { data: BuilderData; save: (p: ProjectPat
         <span>Account name</span>
         <input type="text" value={acctName} maxLength={80} onChange={(e) => setAcctName(e.target.value)} onBlur={() => acctName !== (project.giftAccountName ?? "") && void save({ giftAccountName: acctName })} />
       </label>
+
+      <div className="subhead"><h3 style={{ color: "var(--danger)" }}>Delete this celebration</h3><p className="hint">Removes the website, every photo, video, song and wish for it. This cannot be undone. A payment or credit used on it is not returned.</p></div>
+      {!asking ? <div><button type="button" className="btn ghost small" onClick={() => setAsking(true)}>Delete this celebration</button></div> : (
+        <div className="stack">
+          <label className="field"><span>Type {project.slug} to confirm</span><input type="text" value={confirm} autoCapitalize="none" autoComplete="off" onChange={(e) => setConfirm(e.target.value)} /></label>
+          {delError ? <div className="err">{delError}</div> : null}
+          <div className="row">
+            <button type="button" className="btn danger small" disabled={confirm.trim().toLowerCase() !== project.slug} onClick={() => { setDelError(null); void removeProject({ id: project._id, confirm }).then(() => router.replace("/app")).catch((e) => setDelError(cleanError(e))); }}>Delete it</button>
+            <button type="button" className="btn ghost small" onClick={() => { setAsking(false); setConfirm(""); }}>Keep it</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

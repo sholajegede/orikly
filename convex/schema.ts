@@ -53,6 +53,7 @@ export default defineSchema({
     giftAccountName: v.optional(v.string()),
     giftAccountNumber: v.optional(v.string()),
     showOnWall: v.optional(v.boolean()),
+    slugChanges: v.optional(v.number()),
     videoPlan: v.optional(v.any()),
     directedCount: v.optional(v.number()),
     siteStyle: v.string(),
@@ -244,6 +245,16 @@ export default defineSchema({
   })
     .index("by_reference", ["reference"])
     .index("by_user", ["userId", "createdAt"]),
+
+  // Short updates shown to signed-in customers. Written in the admin app.
+  announcements: defineTable({
+    title: v.string(),
+    body: v.string(),
+    linkUrl: v.optional(v.string()),
+    linkLabel: v.optional(v.string()),
+    active: v.boolean(),
+    createdAt: v.number(),
+  }).index("by_active", ["active", "createdAt"]),
 
   // Webhook event ids we already handled. Delivery is at least once.
   webhookEvents: defineTable({ eventId: v.string(), type: v.string(), at: v.number() }).index("by_event", ["eventId"]),

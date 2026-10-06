@@ -137,23 +137,6 @@ export default function Dashboard() {
           )}
         </section>
 
-        <section className="dash-block dash-two">
-          <div className="card" id="account">
-            <div className="dash-head"><h2>Account</h2></div>
-            <p className="muted small" style={{ margin: "0 0 14px" }}>Signed in as {me?.email ?? "…"}</p>
-            <label className="field"><span>Your name</span>
-              <div className="row" style={{ flexWrap: "nowrap" }}>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="So we know what to call you" />
-                <button className="btn small" disabled={name.trim() === (me?.name ?? "")} onClick={() => void setProfile({ name }).then(() => { setSaved(true); setTimeout(() => setSaved(false), 2000); })}>{saved ? "Saved" : "Save"}</button>
-              </div>
-            </label>
-          </div>
-          <Link href="/app/credits" className="card promo">
-            <span className="tagline">For planners and photographers</span>
-            <b>Make them for your clients</b>
-            <span>Buy in packs from ₦15,000 each and charge what you like.</span>
-          </Link>
-        </section>
       </main>
     </>
   );

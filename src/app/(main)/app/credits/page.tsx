@@ -2,7 +2,6 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { PACKS, PRICE_KOBO } from "@convex/lib/constants";
@@ -12,6 +11,7 @@ import { cleanError, naira, shortDate } from "@/lib/format";
 function Inner() {
   const params = useSearchParams();
   const mine = useQuery(api.packs.mine);
+  const billing = useQuery(api.account.billing);
   const bank = useQuery(api.payments.bankDetails);
   const claim = useMutation(api.packs.claim);
   const cfg = useQuery(api.bachs.config);
@@ -41,13 +41,14 @@ function Inner() {
   }
 
   return (
-    <main className="wrap narrow" style={{ padding: "28px 16px 64px" }}>
+    <main className="wrap dash" style={{ maxWidth: 820 }}>
       <div className="stack">
         <div className="row between">
           <h1 className="display" style={{ fontSize: "clamp(40px, 8vw, 64px)", fontWeight: 400 }}>Credits</h1>
           <span className="chip gold">{mine?.credits ?? 0} left</span>
         </div>
-        <p className="muted" style={{ margin: 0 }}>One credit publishes one celebration with its website and two videos. Open a celebration and choose "Use a credit" on the last step.</p>
+        <p className="muted" style={{ margin: 0 }}>One credit publishes one celebration with its website and two videos. Open a celebration and choose "Use a credit" on the last step. Credits never expire.</p>
+        <h2 style={{ fontSize: 22, marginTop: 28 }}>Top up</h2>
 
         <div className="grid">
           {PACKS.map((p) => (
@@ -98,7 +99,12 @@ function Inner() {
             ))}
           </div>
         ) : null}
-        <Link href="/app" className="btn ghost">Back to my celebrations</Link>
+        <div className="card">
+          <b>Payment history</b>
+          {billing === undefined ? <p className="muted">Loading…</p> : billing.length === 0 ? <p className="muted" style={{ marginBottom: 0 }}>No payments yet.</p> : billing.map((r) => (
+            <div key={r.id} className="earn-line"><span>{r.what} <span className="muted small">{shortDate(r.at)}</span></span><span>{r.method === "credit" ? "1 credit" : naira(r.amountKobo)} <span className={`chip ${r.status === "confirmed" ? "ok" : r.status === "claimed" ? "warn" : "bad"}`}>{r.status === "claimed" ? "confirming" : r.status}</span></span></div>
+          ))}
+        </div>
       </div>
     </main>
   );

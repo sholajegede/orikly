@@ -14,8 +14,25 @@ import { Song } from "@/components/builder/Song";
 import { Style } from "@/components/builder/Style";
 import { PayStep } from "@/components/builder/PayStep";
 import { useSave } from "@/components/builder/shared";
+import { siteUrl } from "@/lib/format";
 
 const STEPS = ["Basics", "Photos and videos", "Words", "Song", "Style", "Preview and pay"];
+
+/** Where the website is, always in the same place: the live link, or the private preview before payment. */
+function SiteBar({ slug, live, names }: { slug: string; live: boolean; names: string }) {
+  const [copied, setCopied] = useState(false);
+  const url = siteUrl(slug);
+  return (
+    <div className="sitebar">
+      <div className="url"><small>{live ? "Your website is live" : "Private preview"}</small><b>{live ? url.replace(/^https?:\/\//, "") : "Only you can see it until you pay"}</b></div>
+      <div className="row" style={{ gap: 8 }}>
+        <a className="btn light small" href={live ? url : `/app/preview/${slug}`} target="_blank" rel="noreferrer">{live ? "Open" : "Preview"}</a>
+        {live ? <button className="btn ghost small" onClick={() => { void navigator.clipboard?.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? "Copied" : "Copy link"}</button> : null}
+        {live ? <a className="btn ghost small" href={`https://wa.me/?text=${encodeURIComponent(`${names}: ${url}`)}`} target="_blank" rel="noreferrer">Share</a> : null}
+      </div>
+    </div>
+  );
+}
 
 export default function Builder() {
   const params = useParams<{ id: string }>();
@@ -46,6 +63,8 @@ export default function Builder() {
         </div>
         <h1 className="display" style={{ fontSize: "clamp(40px, 8vw, 64px)", fontWeight: 400, margin: "6px 0 14px" }}>{project.names}</h1>
         <div className="progress" aria-hidden="true"><i style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} /></div>
+
+        <SiteBar slug={project.slug} live={live} names={project.names} />
 
         <div className="steps" role="tablist">
           {STEPS.map((s, i) => (

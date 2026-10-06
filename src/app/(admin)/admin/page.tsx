@@ -20,7 +20,7 @@ const STEP_LABELS: Record<string, string> = {
   payment_confirmed: "Payment confirmed",
 };
 
-const TABS = ["Today", "Projects", "Packs", "Customer", "Events"] as const;
+const TABS = ["Today", "Projects", "Packs", "Updates", "Customer", "Events"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function AdminPage() {
@@ -65,6 +65,7 @@ function AdminApp({ leave }: { leave: () => void }) {
       {tab === "Today" ? <Today /> : null}
       {tab === "Projects" ? <Projects openCustomer={(id) => { setCustomerId(id); setTab("Customer"); }} /> : null}
       {tab === "Packs" ? <Packs /> : null}
+      {tab === "Updates" ? <Updates /> : null}
       {tab === "Customer" ? <Customer userId={customerId} /> : null}
       {tab === "Events" ? <Events /> : null}
       </main>
@@ -329,6 +330,37 @@ function Packs() {
           <div className="row"><button className="btn small" onClick={() => void run(() => confirm({ orderId: o._id }))}>Payment received</button><button className="btn ghost small" onClick={() => void run(() => reject({ orderId: o._id }))}>Reject</button></div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function Updates() {
+  const rows = useQuery(api.announcements.list);
+  const publish = useMutation(api.announcements.publish);
+  const setActive = useMutation(api.announcements.setActive);
+  const [f, setF] = useState({ title: "", body: "", linkUrl: "", linkLabel: "" });
+  const { err, run } = useRun();
+  return (
+    <div className="grid two">
+      <div className="card stack">
+        <b>Post an update</b>
+        <p className="muted small" style={{ margin: 0 }}>It shows at the bottom of every customer's sidebar. A new update replaces the live one.</p>
+        <label className="field"><span>Title</span><input type="text" maxLength={60} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="New: Storybook video style" /></label>
+        <label className="field"><span>Message</span><textarea maxLength={200} style={{ minHeight: 80 }} value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} /></label>
+        <label className="field"><span>Link (optional)</span><input type="text" value={f.linkUrl} onChange={(e) => setF({ ...f, linkUrl: e.target.value })} placeholder="/app/credits or https://..." /></label>
+        <label className="field"><span>Link text (optional)</span><input type="text" maxLength={30} value={f.linkLabel} onChange={(e) => setF({ ...f, linkLabel: e.target.value })} placeholder="See the packs" /></label>
+        {err ? <div className="err">{err}</div> : null}
+        <div><button className="btn small" onClick={() => void run(async () => { await publish({ title: f.title, body: f.body, linkUrl: f.linkUrl || undefined, linkLabel: f.linkLabel || undefined }); setF({ title: "", body: "", linkUrl: "", linkLabel: "" }); })}>Publish to all customers</button></div>
+      </div>
+      <div className="stack">
+        {rows === undefined ? <p className="muted">Loading…</p> : rows.length === 0 ? <p className="muted">No updates yet.</p> : rows.map((a) => (
+          <div key={a._id} className="card stack" style={{ gap: 6 }}>
+            <div className="row between"><b>{a.title}</b><span className={`chip ${a.active ? "ok" : ""}`}>{a.active ? "Live" : "Off"}</span></div>
+            <div className="small">{a.body}</div>
+            <div className="row"><span className="muted small grow">{shortDate(a.createdAt)}{a.linkUrl ? ` · ${a.linkUrl}` : ""}</span><button className="btn ghost small" onClick={() => void run(() => setActive({ id: a._id, active: !a.active }))}>{a.active ? "Take down" : "Make live"}</button></div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
