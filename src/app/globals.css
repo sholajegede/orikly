@@ -491,6 +491,27 @@ input:focus, textarea:focus, select:focus { border-color: var(--ink); box-shadow
 .spot .about span { opacity: 0.8; }
 .spot .btn { justify-self: start; }
 
+/* onboarding */
+.onb { min-height: 100vh; background: var(--indigo); color: #fff; display: grid; grid-template-rows: auto 1fr; padding: 20px clamp(20px, 5vw, 56px) 40px; }
+.onb-top { display: flex; justify-content: space-between; align-items: center; }
+.onb-dots { display: flex; gap: 6px; }
+.onb-dots i { width: 28px; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.25); transition: background 0.4s, width 0.4s var(--ease); }
+.onb-dots i.on { background: var(--gold); width: 44px; }
+.onb-body { align-self: center; width: 100%; max-width: 640px; margin: 0 auto; animation: stage 0.55s var(--ease); }
+.onb .tagline { opacity: 0.7; }
+.onb h1 { font-size: clamp(42px, 9vw, 84px); font-weight: 400; letter-spacing: -0.042em; line-height: 0.95; margin: 14px 0 32px; }
+.onb h1 em { font-family: var(--serif); font-style: italic; color: var(--gold); letter-spacing: -0.02em; display: block; }
+.onb input[type="text"] { background: transparent; border: 0; border-bottom: 2px solid rgba(255,255,255,0.4); border-radius: 0; color: #fff; font: 400 clamp(26px, 5vw, 40px) var(--display); letter-spacing: -0.03em; padding: 8px 0 12px; margin-bottom: 28px; box-shadow: none; }
+.onb input[type="text"]:focus { border-bottom-color: var(--gold); box-shadow: none; }
+.onb input::placeholder { color: rgba(255,255,255,0.4); }
+.onb-opts { display: grid; gap: 10px; }
+.onb-opts.small { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.onb-opts button { text-align: left; border: 1.5px solid rgba(255,255,255,0.28); background: transparent; color: inherit; border-radius: 20px; padding: 18px 20px; cursor: pointer; font: inherit; display: grid; gap: 4px; transition: background 0.25s, border-color 0.25s, border-radius 0.35s var(--ease), transform 0.25s var(--ease); min-height: 56px; }
+.onb-opts button:hover, .onb-opts button.on { background: #fff; color: var(--ink); border-color: #fff; border-radius: 20px 56px 20px 20px; transform: translateX(4px); }
+.onb-opts b { font: 500 21px/1.15 var(--display); letter-spacing: -0.03em; }
+.onb-opts span { opacity: 0.75; font-size: 15px; }
+.onb-back { margin-top: 22px; border: 0; background: none; color: inherit; font: inherit; opacity: 0.7; cursor: pointer; text-decoration: underline; padding: 6px 0; }
+
 /* dashboard */
 .dash { padding-top: 36px; padding-bottom: 96px; }
 .dash-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }

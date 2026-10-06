@@ -27,6 +27,9 @@ export default defineSchema({
     lastSeenAt: v.optional(v.number()),
     marketingOptOut: v.optional(v.boolean()),
     credits: v.optional(v.number()),
+    segment: v.optional(v.string()),
+    heardFrom: v.optional(v.string()),
+    onboardedAt: v.optional(v.number()),
   })
     .index("email", ["email"])
     .index("phone", ["phone"]),

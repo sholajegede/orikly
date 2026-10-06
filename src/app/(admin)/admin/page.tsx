@@ -257,8 +257,8 @@ function Customer({ userId }: { userId: Id<"users"> | null }) {
         <div className="card stack" style={{ gap: 6 }}>
           <h2 style={{ fontSize: 22 }}>{c.user.name ?? c.user.email}</h2>
           <div className="small">Email: {c.user.email ?? "none"}</div>
-          <div className="small">WhatsApp: {c.user.whatsapp ?? "not given"}</div>
           <div className="small">Came from: {c.user.source ?? "unknown"}</div>
+          <div className="small">Making for: {c.user.segment ?? "not asked"} · Heard from: {c.user.heardFrom ?? "not asked"}</div>
           <div className="small">First seen {shortDate(c.user.firstSeenAt)}{c.user.lastSeenAt ? ` · last seen ${shortDate(c.user.lastSeenAt)}` : ""}</div>
         </div>
         <div className="card stack" style={{ gap: 8 }}>

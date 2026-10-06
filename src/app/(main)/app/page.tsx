@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@convex/_generated/api";
@@ -42,7 +43,10 @@ export default function Dashboard() {
   const projects = useQuery(api.projects.mine);
   const setProfile = useMutation(api.users.setProfile);
   const track = useTrack();
+  const router = useRouter();
   const [name, setName] = useState("");
+  // New accounts answer three quick questions before they see the dashboard.
+  useEffect(() => { if (me && !me.onboarded) router.replace("/app/welcome"); }, [me?.onboarded, me?._id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [saved, setSaved] = useState(false);
 
   useEffect(() => { if (me) setName(me.name ?? ""); }, [me?._id]); // eslint-disable-line react-hooks/exhaustive-deps
