@@ -10,6 +10,11 @@ import { useTrack } from "@/lib/track";
 
 const main = process.env.NEXT_PUBLIC_SITE_URL ?? "/";
 
+function clock(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "am" : "pm"}`;
+}
+
 export type SiteData = NonNullable<FunctionReturnType<typeof api.projects.publicBySlug>>;
 
 /**
@@ -29,6 +34,7 @@ export function SiteView({ slug, initial }: { slug: string; initial?: SiteData }
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (data && data.live && !data.isOwner && !viewed.current) {
@@ -103,6 +109,17 @@ export function SiteView({ slug, initial }: { slug: string; initial?: SiteData }
         </div>
       </header>
 
+      {site.venue || site.eventTime || site.dressCode ? (
+        <section className="sec"><div className="wrap"><h2>The day</h2>
+          <div className="facts">
+            {site.eventDate ? <div><span>Date</span><b>{prettyDate(site.eventDate)}</b></div> : null}
+            {site.eventTime ? <div><span>Time</span><b>{clock(site.eventTime)}</b></div> : null}
+            {site.venue ? <div><span>Venue</span><b>{site.venue}</b>{site.mapUrl ? <a href={site.mapUrl} target="_blank" rel="noreferrer" onClick={() => track("map_open", { slug })}>Open in Maps</a> : null}</div> : null}
+            {site.dressCode ? <div><span>Colors of the day</span><b>{site.dressCode}</b></div> : null}
+          </div>
+        </div></section>
+      ) : null}
+
       {site.story ? (
         <section className="sec"><div className="wrap"><h2>Our story</h2><p className="prose">{site.story}</p></div></section>
       ) : null}
@@ -150,6 +167,18 @@ export function SiteView({ slug, initial }: { slug: string; initial?: SiteData }
             {wishes.map((w, i) => (
               <div className="wish" key={`${w.createdAt}-${i}`}><b>{w.guestName}</b><p style={{ margin: "6px 0 0", whiteSpace: "pre-wrap" }}>{w.message}</p></div>
             ))}
+          </div>
+        </div></section>
+      ) : null}
+
+      {site.gift ? (
+        <section className="sec"><div className="wrap" style={{ maxWidth: 720 }}>
+          <h2>Send a gift</h2>
+          <div className="giftcard">
+            <span>{site.gift.bank}</span>
+            <b>{site.gift.number}</b>
+            <span>{site.gift.name}</span>
+            <button className="btn sbtn" onClick={() => { void navigator.clipboard?.writeText(site.gift!.number); setCopied(true); setTimeout(() => setCopied(false), 1600); track("gift_copy", { slug }); }}>{copied ? "Copied" : "Copy account number"}</button>
           </div>
         </div></section>
       ) : null}
